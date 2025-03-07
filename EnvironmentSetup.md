@@ -59,8 +59,13 @@ jetson-containers run $(autotag ml_ros:latest)
 ```
 You can include any of the usual docker commands with this. For example, my full command is:
 ```
-jetson-containers run -v ~/workspaces/catkin_ws:/workspace/catkin_ws -v /dev/bus/usb:/dev/bus/usb -i --device=/dev/ttyUSB0 --device=/dev/spidev0.0 --rm --privileged --name ros_noetic $(autotag ml_ros:latest)
+jetson-containers run -v ~/workspaces/catkin_ws:/workspace/catkin_ws -v ~/gemini_api:/gemini_code -v /dev/bus/usb:/dev/bus/usb -i --device=/dev/ttyUSB0 --device=/dev/spidev0.0 --rm --privileged --name ros_noetic $(autotag ml_ros:latest)
 ```
+Alternatively, use docker run directly:
+```
+sudo docker run --runtime nvidia --network=host -v ~/workspaces/catkin_ws:/workspace/catkin_ws -v ~/gemini_api:/gemini_code -v /dev/bus/usb:/dev/bus/usb -it --device=/dev/ttyUSB0 --device=/dev/spidev0.0 --rm --privileged --name ros_noetic ml_ros:latest
+```
+
 If everything has gone according to plan, you should now have a docker container which has ROS, cuda enabled pytorch/tensorflow, and everything else you might need!
 
 Now, you can clone the various repos into the catkin_ws/src directory. Before calling `catkin_make` for the first time, you will need to source the setup file: `source /opt/ros/noetic/setup.bash`.
