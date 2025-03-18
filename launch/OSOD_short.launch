@@ -1,4 +1,4 @@
-<!-- minimal.launch -->
+<!-- Code for launching script for OSOD Paper -->
 <launch>
 
   <!-- Specify the package name -->
@@ -56,12 +56,12 @@
     <!-- No arguments needed -->
   </include>
 
-  <include file="$(find mattbot_dds)/launch/comm_manager.launch">
+  <!-- <include file="$(find mattbot_dds)/launch/comm_manager.launch"> -->
     <!-- No arguments needed -->
-  </include>
+  <!-- </include> -->
 
-  <include file="$(find mattbot_dds)/launch/heartbeat.launch">
+  <!-- <include file="$(find mattbot_dds)/launch/heartbeat.launch"> -->
     <!-- No arguments needed -->
-  </include>
+  <!-- </include> -->
 
 </launch>

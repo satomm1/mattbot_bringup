@@ -4,6 +4,7 @@ import spidev
 import struct
 import socket
 import json
+import os
 
 from confluent_kafka import Producer, KafkaException, KafkaError
 from confluent_kafka.admin import AdminClient, NewTopic
@@ -50,9 +51,9 @@ class MCU_Comms:
 
         # Get ROBOT_ID from environment variable
         robot_id_env = os.getenv('ROBOT_ID')
-        if robot_id_env == 1:
+        if robot_id_env == "1":
             self.spi.open(2,0)  # open spi port 2, device (CS) 0
-        elif robot_id_env == 2:
+        elif robot_id_env == "2":
             self.spi.open(0,0)  # open spi port 0, device (CS) 0
         else:
             self.spi.open(0,0)  # open spi port 0, device (CS) 0
