@@ -6,8 +6,8 @@ import socket
 import json
 import os
 
-from confluent_kafka import Producer, KafkaException, KafkaError
-from confluent_kafka.admin import AdminClient, NewTopic
+# from confluent_kafka import Producer, KafkaException, KafkaError
+# from confluent_kafka.admin import AdminClient, NewTopic
 from rospy_message_converter import message_converter
 
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion, Vector3, TransformStamped
@@ -90,35 +90,35 @@ class MCU_Comms:
         self.transform_stamped_cam.transform.rotation.z = rotation.z
         self.transform_stamped_cam.transform.rotation.w = rotation.w        
 
-        self.stream_with_kafka = rospy.get_param('~stream_with_kafka', False)
-        bootstrap_server = rospy.get_param('~bootstrap_server', '192.168.50.2:29094')
-        if self.stream_with_kafka:
-            try:
-                conf = {
-                    'bootstrap.servers': bootstrap_server,
-                    'client.id': socket.gethostname()
-                }
+        # self.stream_with_kafka = rospy.get_param('~stream_with_kafka', False)
+        # bootstrap_server = rospy.get_param('~bootstrap_server', '192.168.50.2:29094')
+        # if self.stream_with_kafka:
+        #     try:
+        #         conf = {
+        #             'bootstrap.servers': bootstrap_server,
+        #             'client.id': socket.gethostname()
+        #         }
 
-                self.producer = Producer(conf)
-                metadata = self.producer.list_topics(timeout=5)
-                if metadata.topics:
-                    print("Broker is available. Connecting...")
-                    # Connect to the broker and perform further operations
+        #         self.producer = Producer(conf)
+        #         metadata = self.producer.list_topics(timeout=5)
+        #         if metadata.topics:
+        #             print("Broker is available. Connecting...")
+        #             # Connect to the broker and perform further operations
 
-                    self.kafka_admin = AdminClient(conf)
+        #             self.kafka_admin = AdminClient(conf)
 
-                    # If the imu and odom topics don't exist yet let's create them
-                    if "imu" not in metadata.topics:
-                        new_topics = [NewTopic(topic="imu", num_partitions=1, replication_factor=1)]
-                        self.kafka_admin.create_topics(new_topics)
-                    if "odom" not in metadata.topics:
-                        new_topics = [NewTopic(topic="odom", num_partitions=1, replication_factor=1)]
-                        self.kafka_admin.create_topics(new_topics)
-                else:
-                    print("Broker is not available.")
-            except KafkaException as e:
-                print(f"Error connecting to broker: {e}")
-                self.stream_with_kafka = False
+        #             # If the imu and odom topics don't exist yet let's create them
+        #             if "imu" not in metadata.topics:
+        #                 new_topics = [NewTopic(topic="imu", num_partitions=1, replication_factor=1)]
+        #                 self.kafka_admin.create_topics(new_topics)
+        #             if "odom" not in metadata.topics:
+        #                 new_topics = [NewTopic(topic="odom", num_partitions=1, replication_factor=1)]
+        #                 self.kafka_admin.create_topics(new_topics)
+        #         else:
+        #             print("Broker is not available.")
+        #     except KafkaException as e:
+        #         print(f"Error connecting to broker: {e}")
+        #         self.stream_with_kafka = False
 
         # Subscribe to the cmd_vel topic to receive velocity commands
         rospy.Subscriber("/cmd_vel", Twist, self.vel_callback)
@@ -252,14 +252,14 @@ class MCU_Comms:
 
                 self.odom_pub.publish(odom)  # actually publish the data
 
-                if self.stream_with_kafka:
-                    odom_dict = message_converter.convert_ros_message_to_dictionary(odom)
-                    odom_dict['robot'] = self.robot_id
+                # if self.stream_with_kafka:
+                #     odom_dict = message_converter.convert_ros_message_to_dictionary(odom)
+                #     odom_dict['robot'] = self.robot_id
 
-                    # serialize the data before sending it
-                    odom_dict = json.dumps(odom_dict).encode('utf-8')
+                #     # serialize the data before sending it
+                #     odom_dict = json.dumps(odom_dict).encode('utf-8')
 
-                    self.producer.produce("odom", odom_dict)
+                #     self.producer.produce("odom", odom_dict)
 
                 sensor_sequence = sensor_sequence + 1
 
@@ -323,10 +323,10 @@ class MCU_Comms:
                 
                 # self.imu_pub.publish(imu)  # actually publish the data                
 
-                if self.stream_with_kafka:
-                    imu_dict = message_converter.convert_ros_message_to_dictionary(imu)
-                    imu_dict['robot'] = self.robot_id
-                    # self.producer.produce("imu", value=imu_dict)
+                # if self.stream_with_kafka:
+                #     imu_dict = message_converter.convert_ros_message_to_dictionary(imu)
+                #     imu_dict['robot'] = self.robot_id
+                #     # self.producer.produce("imu", value=imu_dict)
 
             elif rcvd[0] == 15:  # Received IMU Orientation XY data
                 qx = bytes_to_float(list(reversed(rcvd[1:5])))
@@ -415,9 +415,9 @@ class MCU_Comms:
 
         self.spi.close()
 
-        if self.stream_with_kafka:
-            self.producer.flush()
-            self.producer.close()
+        # if self.stream_with_kafka:
+        #     self.producer.flush()
+        #     self.producer.close()
 
 def float_to_bytes(float_number):
     """
