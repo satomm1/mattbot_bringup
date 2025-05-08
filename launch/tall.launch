@@ -37,7 +37,7 @@
   <!-- </include> -->
 
   <!-- Launch the OSOD -->
-  <include file="$(find image_detection_with_unknowns)/launch/detect_with_dist.launch">
+  <include file="$(find image_detection_with_unknowns)/launch/detect_updated.launch">
     <arg name="tall" default="$(arg tall)"/>
   </include>
 
