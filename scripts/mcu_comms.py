@@ -90,36 +90,6 @@ class MCU_Comms:
         self.transform_stamped_cam.transform.rotation.z = rotation.z
         self.transform_stamped_cam.transform.rotation.w = rotation.w        
 
-        # self.stream_with_kafka = rospy.get_param('~stream_with_kafka', False)
-        # bootstrap_server = rospy.get_param('~bootstrap_server', '192.168.50.2:29094')
-        # if self.stream_with_kafka:
-        #     try:
-        #         conf = {
-        #             'bootstrap.servers': bootstrap_server,
-        #             'client.id': socket.gethostname()
-        #         }
-
-        #         self.producer = Producer(conf)
-        #         metadata = self.producer.list_topics(timeout=5)
-        #         if metadata.topics:
-        #             print("Broker is available. Connecting...")
-        #             # Connect to the broker and perform further operations
-
-        #             self.kafka_admin = AdminClient(conf)
-
-        #             # If the imu and odom topics don't exist yet let's create them
-        #             if "imu" not in metadata.topics:
-        #                 new_topics = [NewTopic(topic="imu", num_partitions=1, replication_factor=1)]
-        #                 self.kafka_admin.create_topics(new_topics)
-        #             if "odom" not in metadata.topics:
-        #                 new_topics = [NewTopic(topic="odom", num_partitions=1, replication_factor=1)]
-        #                 self.kafka_admin.create_topics(new_topics)
-        #         else:
-        #             print("Broker is not available.")
-        #     except KafkaException as e:
-        #         print(f"Error connecting to broker: {e}")
-        #         self.stream_with_kafka = False
-
         # Subscribe to the cmd_vel topic to receive velocity commands
         rospy.Subscriber("/cmd_vel", Twist, self.vel_callback)
 
@@ -251,15 +221,6 @@ class MCU_Comms:
                 odom.twist.twist.angular.z = w_dr
 
                 self.odom_pub.publish(odom)  # actually publish the data
-
-                # if self.stream_with_kafka:
-                #     odom_dict = message_converter.convert_ros_message_to_dictionary(odom)
-                #     odom_dict['robot'] = self.robot_id
-
-                #     # serialize the data before sending it
-                #     odom_dict = json.dumps(odom_dict).encode('utf-8')
-
-                #     self.producer.produce("odom", odom_dict)
 
                 sensor_sequence = sensor_sequence + 1
 
@@ -415,10 +376,6 @@ class MCU_Comms:
 
         self.spi.close()
 
-        # if self.stream_with_kafka:
-        #     self.producer.flush()
-        #     self.producer.close()
-
 def float_to_bytes(float_number):
     """
     This function takes a 32-bit float and returns a list of four 8-bit integers
@@ -431,7 +388,6 @@ def float_to_bytes(float_number):
 
     return int_list
     
-
 def bytes_to_float(byte_array):
     # Pack the bytes into a 32-bit float
     float_number = struct.unpack('f', bytes(byte_array))[0]
