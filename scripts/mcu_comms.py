@@ -94,7 +94,7 @@ class MCU_Comms:
         rospy.Subscriber("/cmd_vel", Twist, self.vel_callback)
 
 
-    def mcu_startup(self):
+    def mcu_startup(self, pos_x=None, pos_y=None, pos_theta=None):
         """
         This function is used to bring up the MCU online and confirm communication
         """
@@ -118,7 +118,20 @@ class MCU_Comms:
             time.sleep(0.1)
 
         # Send confirmation message to MCU
-        confirmation_message = [90, 170, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        if pos_x is None and pos_y is None and pos_theta is None:
+            confirmation_message = [90, 170, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        else:
+            # Convert position data to bytes
+            pos_x_bytes = float_to_bytes(pos_x)
+            pos_y_bytes = float_to_bytes(pos_y)
+            pos_theta_bytes = float_to_bytes(pos_theta)
+
+            confirmation_message = [90, 170, pos_x_bytes[3], pos_x_bytes[2], pos_x_bytes[1], pos_x_bytes[0],
+                                    pos_y_bytes[3], pos_y_bytes[2], pos_y_bytes[1], pos_y_bytes[0],
+                                    pos_theta_bytes[3], pos_theta_bytes[2], pos_theta_bytes[1], pos_theta_bytes[0],
+                                    0, 0]
+
+        # Send the confirmation message to the MCU
         self.spi.writebytes([55])
         rcvd = self.spi.xfer2(confirmation_message)
         print(rcvd)
@@ -172,6 +185,8 @@ class MCU_Comms:
         qx = 0
         qy = 0
 
+        num_unknown = 0
+
         sensor_sequence = 0  # Sequence number for sensor messages
         while not rospy.is_shutdown():
             # Send velocity command to MCU
@@ -188,6 +203,7 @@ class MCU_Comms:
 
             # Now do something with the received data
             if rcvd[0] == 7: # Received dead reckoning data
+                num_unknown = 0  # Reset unknown message count
 
                 # Extract the dead reckoning data (converts from bytes to float)
                 V_dr = bytes_to_float(list(reversed(rcvd[1:5])))
@@ -225,6 +241,7 @@ class MCU_Comms:
                 sensor_sequence = sensor_sequence + 1
 
             elif rcvd[0] == 8:  # Recieved position data
+                num_unknown = 0  # Reset unknown message count
 
                 # Extract the position data (converts from bytes to float)
                 pos_x = bytes_to_float(list(reversed(rcvd[1:5])))
@@ -259,6 +276,8 @@ class MCU_Comms:
                 self.tf_pub.publish(tf_msg)  # actually publish the data
 
             elif rcvd[0] == 9: # Received IMU data
+                num_unknown = 0  # Reset unknown message count
+
                 acc_x = bytes_to_float(list(reversed(rcvd[1:5])))
                 acc_y = bytes_to_float(list(reversed(rcvd[5:9])))
                 ang_vel_z = bytes_to_float(list(reversed(rcvd[9:13])))
@@ -290,10 +309,14 @@ class MCU_Comms:
                 #     # self.producer.produce("imu", value=imu_dict)
 
             elif rcvd[0] == 15:  # Received IMU Orientation XY data
+                num_unknown = 0  # Reset unknown message count
+
                 qx = bytes_to_float(list(reversed(rcvd[1:5])))
                 qy = bytes_to_float(list(reversed(rcvd[5:9])))
 
             elif rcvd[0] == 16:  # Received IMU Orientation ZW data
+                num_unknown = 0  # Reset unknown message count
+
                 qz = bytes_to_float(list(reversed(rcvd[1:5])))
                 qw = bytes_to_float(list(reversed(rcvd[5:9])))
 
@@ -326,6 +349,8 @@ class MCU_Comms:
                 self.imu_pub.publish(imu)  # actually publish the data
                 
             elif rcvd[0] == 10: # Received reflective sensor data
+                num_unknown = 0  # Reset unknown message count
+
                 right_sensor = bytes_to_unsigned_int(rcvd[1], rcvd[2])
                 front_sensor = bytes_to_unsigned_int(rcvd[3], rcvd[4])
                 left_sensor = bytes_to_unsigned_int(rcvd[5], rcvd[6])
@@ -361,8 +386,13 @@ class MCU_Comms:
                         print("Button 3 pressed")
                     else:
                         print("Button 3 released")
-                
+            else:
+                num_unknown += 1
 
+                if num_unknown >= 20:
+                    print("Resetting")
+                    self.mcu_startup(pos_x=pos_x, pos_y=pos_y, pos_theta=pos_theta)
+                    num_unknown = 0                
             rate.sleep()
 
     def shutdown(self):
