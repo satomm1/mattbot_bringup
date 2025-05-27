@@ -163,8 +163,6 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
   scripts/mcu_comms.py
-  scripts/map_subscriber.py
-  scripts/goal_handler.py
   scripts/get_known_points.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
