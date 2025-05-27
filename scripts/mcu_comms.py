@@ -6,8 +6,6 @@ import socket
 import json
 import os
 
-# from confluent_kafka import Producer, KafkaException, KafkaError
-# from confluent_kafka.admin import AdminClient, NewTopic
 from rospy_message_converter import message_converter
 
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion, Vector3, TransformStamped
@@ -434,7 +432,5 @@ def mcu_shutdown():
 
 if __name__ == "__main__":
     comms = MCU_Comms()
-    # req.send_vel_command()
     rospy.on_shutdown(mcu_shutdown)
-    # req.spi.close()
     comms.run()
