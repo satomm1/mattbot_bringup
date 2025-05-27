@@ -50,7 +50,7 @@
     <!-- No arguments needed -->
   </include>
 
-  <include file="$(find mattbot_dds)/launch/dds2.launch">
+  <include file="$(find mattbot_dds)/launch/dds.launch">
     <!-- No arguments needed -->
   </include>
 
