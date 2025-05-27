@@ -3,8 +3,6 @@ This package is for general bringup of the robot. The general functions of the s
 
 ### Scripts
 - **mcu_comms.py**: This file handles communication between the Jetson (onboard computer) and the microcontroller (which is used for motor control and low level sensors). Communication is handled through the SPI protocol and occurs at 1 MHz baud rate. This script sends wheel velocity commands via SPI, and receives IMU and odometry data from the MCU.
-- **map_subscriber.py**: This script repeatedly polls the server for a map and publishes the map and map metadata to the map and map_metadata topics. 
-- **goal_handler.py**: This script polls the server for the goal of the current robot. If a new goal is found, the goal is published to the external_goal topic.
 - **get_known_points.py**: This scripts gets known points and stores them to a .txt file. This is to enable transformation between different maps.
 
 ### Launch
