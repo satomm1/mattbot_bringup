@@ -36,8 +36,10 @@ class MCU_Comms:
         # Publish the TF data
         self.tf_pub = rospy.Publisher("/tf", TFMessage, queue_size=10)
         
-        # Publish the imu data
-        self.imu_pub = rospy.Publisher("/imu/data", Imu, queue_size=10)
+        # # Publish the imu data
+        # self.imu_pub = rospy.Publisher("/imu/data", Imu, queue_size=10)
+
+        self.roll_pitch_pub = rospy.Publisher("/imu/roll_pitch", Quaternion, queue_size=10)
         
         # Publish the reflective sensor data
         self.left_sensor_pub = rospy.Publisher('/cliff_sensor/left_sensor', Float32, queue_size=10)
@@ -276,10 +278,15 @@ class MCU_Comms:
             elif rcvd[0] == 9: # Received IMU data
                 num_unknown = 0  # Reset unknown message count
 
-                acc_x = bytes_to_float(list(reversed(rcvd[1:5])))
-                acc_y = bytes_to_float(list(reversed(rcvd[5:9])))
-                ang_vel_z = bytes_to_float(list(reversed(rcvd[9:13])))
+                roll = bytes_to_float(list(reversed(rcvd[1:5])))
+                pitch = bytes_to_float(list(reversed(rcvd[5:9])))
+
+                print("Roll: ", roll, " Pitch: ", pitch)
                 
+                roll_pitch = quaternion_from_euler(roll, pitch, 0)
+                roll_pitch = Quaternion(*roll_pitch)
+                self.roll_pitch_pub.publish(roll_pitch)  # actually publish the data
+
                 # imu = Imu()
                 # # provide header information
                 # imu.header.stamp = rospy.Time.now()
@@ -300,11 +307,6 @@ class MCU_Comms:
                 # imu.orientation_covariance[0] = -1.0
                 
                 # self.imu_pub.publish(imu)  # actually publish the data                
-
-                # if self.stream_with_kafka:
-                #     imu_dict = message_converter.convert_ros_message_to_dictionary(imu)
-                #     imu_dict['robot'] = self.robot_id
-                #     # self.producer.produce("imu", value=imu_dict)
 
             elif rcvd[0] == 15:  # Received IMU Orientation XY data
                 num_unknown = 0  # Reset unknown message count
