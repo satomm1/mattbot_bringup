@@ -280,8 +280,6 @@ class MCU_Comms:
 
                 roll = bytes_to_float(list(reversed(rcvd[1:5])))
                 pitch = bytes_to_float(list(reversed(rcvd[5:9])))
-
-                print("Roll: ", roll, " Pitch: ", pitch)
                 
                 roll_pitch = quaternion_from_euler(roll, pitch, 0)
                 roll_pitch = Quaternion(*roll_pitch)
