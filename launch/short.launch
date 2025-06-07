@@ -14,10 +14,29 @@
     <arg name="output_loc" value="log"/>
   </include>
 
-  <!-- Launch the LIDAR -->
-  <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch">
-    <!-- No arguments needed -->
-  </include>
+  <!-- Define inclined argument with default as false -->
+  <arg name="inclined" default="false"/>
+  
+  <!-- Conditionally launch LiDAR Correction based on inclined parameter -->
+  <group if="$(arg inclined)">
+    <!-- Launch the LIDAR -->
+    <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch">
+      <arg name="scan_topic" value="scan_original"/>
+    </include>
+
+    <!-- Launch LiDAR Correction with inclined compensation -->
+    <include file="$(find mattbot_mcl)/launch/lidar_correction.launch">
+      <arg name="scan_input" value="/scan_original"/>
+      <arg name="scan_output" value="/scan"/>  
+    </include>
+  </group>
+  
+  <group unless="$(arg inclined)">
+    <!-- Launch the LIDAR without inclined correction -->
+    <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch">
+
+    </include>
+  </group>
   
   <!-- Launch the Camera -->
   <include file="$(find astra_camera)/launch/astra.launch">
