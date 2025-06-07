@@ -278,10 +278,14 @@ class MCU_Comms:
             elif rcvd[0] == 9: # Received IMU data
                 num_unknown = 0  # Reset unknown message count
 
+                # Get roll/pitch in degrees
                 roll = bytes_to_float(list(reversed(rcvd[1:5])))
                 pitch = bytes_to_float(list(reversed(rcvd[5:9])))
+
+                roll_rad = roll * (3.141592653589793 / 180.0)  # Convert to radians
+                pitch_rad = pitch * (3.141592653589793 / 180.0)
                 
-                roll_pitch = quaternion_from_euler(roll, pitch, 0)
+                roll_pitch = quaternion_from_euler(roll_rad, pitch_rad, 0)
                 roll_pitch = Quaternion(*roll_pitch)
                 self.roll_pitch_pub.publish(roll_pitch)  # actually publish the data
 
