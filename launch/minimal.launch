@@ -3,6 +3,7 @@
 
   <!-- Specify the package name -->
   <arg name="package" default="mattbot_bringup"/>
+  <arg name="car" default="false"/>
 
   <!-- Launch a node from the package -->
   <node pkg="$(arg package)" type="mcu_comms.py" name="mcu_comms_node" output="screen">
@@ -14,7 +15,14 @@
     <arg name="output_loc" value="log"/>
   </include>
 
-  <param name="~robot_description" value="$(find mattbot_bringup)/urdf/robot_tf.urdf"/>
-  <node pkg="$(arg package)" type="publish_transforms.py" name="rob_st_pub" output="log" />
+  <!-- Conditionally set parameter name based on car argument -->
+  <group if="$(arg car)">
+    <param name="~robot_description" value="$(find mattbot_bringup)/urdf/robot_tf_car.urdf"/>
+    <node pkg="$(arg package)" type="publish_transforms.py" name="rob_st_pub" output="log" />
+  </group>
+  <group unless="$(arg car)">
+    <param name="~robot_description" value="$(find mattbot_bringup)/urdf/robot_tf.urdf"/>
+    <node pkg="$(arg package)" type="publish_transforms.py" name="rob_st_pub" output="log" />
+  </group>
 
 </launch>

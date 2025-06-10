@@ -4,21 +4,15 @@
   <!-- Specify the package name -->
   <arg name="package" default="mattbot_bringup"/>
 
-  <!-- Launch a node from the package -->
-  <node pkg="$(arg package)" type="mcu_comms.py" name="mcu_comms_node" output="screen">
-    <!-- Add any additional node-specific parameters here -->
-  </node>
+  <!-- Define car argument with default as false -->
+  <arg name="car" default="false"/>
 
-  <!-- Launch the twist multiplexer -->
-  <include file="$(find twist_mux)/launch/twist_mux.launch">
-    <arg name="output_loc" value="log"/>
+  <include file="$(find mattbot_bringup)/launch/minimal.launch">
+    <arg name="car" value="$(arg car)"/>
   </include>
-
-  <!-- Define inclined argument with default as false -->
-  <arg name="inclined" default="false"/>
   
-  <!-- Conditionally launch LiDAR Correction based on inclined parameter -->
-  <group if="$(arg inclined)">
+  <!-- Conditionally launch LiDAR Correction based on car parameter -->
+  <group if="$(arg car)">
     <!-- Launch the LIDAR -->
     <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch">
       <arg name="scan_topic" value="scan_original"/>
@@ -31,7 +25,7 @@
     </include>
   </group>
   
-  <group unless="$(arg inclined)">
+  <group unless="$(arg car)">
     <!-- Launch the LIDAR without inclined correction -->
     <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch">
 
