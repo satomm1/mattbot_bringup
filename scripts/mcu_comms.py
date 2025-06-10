@@ -71,24 +71,6 @@ class MCU_Comms:
         # Initialize linear/angular velocity commands
         self.lin_cmd = 0.0
         self.ang_cmd = 0.0
-        
-        # This is the transform to give relation between camera and robot
-        self.transform_stamped_cam = TransformStamped()
-                
-        self.transform_stamped_cam.header.stamp = rospy.Time.now()
-        self.transform_stamped_cam.header.frame_id = "base_footprint"
-        self.transform_stamped_cam.header.seq = 0
-        self.transform_stamped_cam.child_frame_id = "camera_link"
-        self.transform_stamped_cam.transform.translation.x = 0.127
-        self.transform_stamped_cam.transform.translation.y = 0
-        self.transform_stamped_cam.transform.translation.z = 0
-                
-        rotation = quaternion_from_euler(0,0,0)
-        rotation = Quaternion(*rotation)        
-        self.transform_stamped_cam.transform.rotation.x = rotation.x
-        self.transform_stamped_cam.transform.rotation.y = rotation.y
-        self.transform_stamped_cam.transform.rotation.z = rotation.z
-        self.transform_stamped_cam.transform.rotation.w = rotation.w        
 
         # Subscribe to the cmd_vel topic to receive velocity commands
         rospy.Subscriber("/cmd_vel", Twist, self.vel_callback)
@@ -269,9 +251,6 @@ class MCU_Comms:
                 transform_stamped.transform.rotation.w = rotation.w
 
                 tf_msg.transforms.append(transform_stamped)  # Add the new TF
-                
-                self.transform_stamped_cam.header.stamp = rospy.Time.now()
-                tf_msg.transforms.append(self.transform_stamped_cam)
 
                 self.tf_pub.publish(tf_msg)  # actually publish the data
 

@@ -14,4 +14,7 @@
     <arg name="output_loc" value="log"/>
   </include>
 
+  <param name="~robot_description" value="$(find mattbot_bringup)/urdf/robot_tf.urdf"/>
+  <node pkg="$(arg package)" type="publish_transforms.py" name="rob_st_pub" output="log" />
+
 </launch>

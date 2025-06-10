@@ -164,6 +164,7 @@ include_directories(
 catkin_install_python(PROGRAMS
   scripts/mcu_comms.py
   scripts/get_known_points.py
+  scripts/publish_transforms.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
