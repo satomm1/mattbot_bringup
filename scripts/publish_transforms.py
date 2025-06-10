@@ -50,7 +50,7 @@ class TransformPublisher:
         return transform
         
     def run(self):
-        rate = rospy.Rate(0.5)
+        rate = rospy.Rate(10)
 
         while not rospy.is_shutdown():
 
