@@ -71,4 +71,8 @@
     <!-- No arguments needed-->
   </include>
 
+  <include file="$(find mattbot_image_detection)/launch/face_detection.launch">
+    <!-- No arguments needed -->
+  </include>
+
 </launch>
