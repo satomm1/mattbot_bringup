@@ -39,20 +39,11 @@
     <!-- No arguments needed -->
   </include>
 
-  <!-- Launch the Image Detector -->
-  <!-- <include file="$(find mattbot_image_detection)/launch/short.launch"> -->
-    <!-- No arguments needed -->
-  <!-- </include> -->
-
-  <!-- Launch the Person Tracker -->
-  <!-- <include file="$(find mattbot_image_detection)/launch/person_tracker.launch"> -->
-    <!-- No arguments needed -->
-  <!-- </include> -->
 
   <!-- Launch the OSOD -->
-  <include file="$(find image_detection_with_unknowns)/launch/detect_updated.launch">
+  <include file="$(find mattbot_image_detection)/launch/detect_updated_osod.launch">
     <arg name="tall" default="$(arg tall)"/>
-  </include>
+  </include> 
 
   <!-- Launch the Monte Carlo Localization -->
   <include file="$(find mattbot_mcl)/launch/mcl.launch">
@@ -70,6 +61,10 @@
   <include file="$(find mattbot_record)/launch/audio_with_speech_detection.launch">
     <!-- No arguments needed-->
   </include>
+
+  <!-- <include file="$(find mattbot_image_detection)/launch/face_detection.launch"> -->
+    <!-- No arguments needed -->
+  <!-- </include> -->
 
   <include file="$(find mattbot_image_detection)/launch/face_detection.launch">
     <!-- No arguments needed -->
