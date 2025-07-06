@@ -46,7 +46,11 @@
   </include> 
 
   <!-- Launch the Monte Carlo Localization -->
-  <include file="$(find mattbot_mcl)/launch/mcl.launch">
+  <!-- <include file="$(find mattbot_mcl)/launch/mcl.launch"> -->
+    <!-- No arguments needed -->
+  <!-- </include> -->
+
+  <include file="$(find mattbot_bringup)/launch/amcl.launch">
     <!-- No arguments needed -->
   </include>
 
