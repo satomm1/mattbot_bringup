@@ -25,12 +25,22 @@
       <arg name="scan_input" value="/scan_original"/>
       <arg name="scan_output" value="/scan"/>  
     </include>
+
+    <!-- Launch AMCL for the car -->
+    <include file="$(find mattbot_bringup)/launch/amcl_car.launch">
+      <!-- No arguments needed -->
+    </include>
   </group>
   
   <group unless="$(arg car)">
     <!-- Launch the LIDAR without inclined correction -->
     <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch">
+      <!-- No arguments needed -->
+    </include>
 
+    <!-- Launch AMCL for the robot -->
+    <include file="$(find mattbot_bringup)/launch/amcl.launch">
+      <!-- No arguments needed -->
     </include>
   </group>
   
@@ -44,15 +54,6 @@
   <include file="$(find mattbot_image_detection)/launch/detect_updated_osod.launch">
     <arg name="tall" default="$(arg tall)"/>
   </include> 
-
-  <!-- Launch the Monte Carlo Localization -->
-  <!-- <include file="$(find mattbot_mcl)/launch/mcl.launch"> -->
-    <!-- No arguments needed -->
-  <!-- </include> -->
-
-  <include file="$(find mattbot_bringup)/launch/amcl.launch">
-    <!-- No arguments needed -->
-  </include>
 
   <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_tall.launch">
     <!-- No arguments needed -->
@@ -69,9 +70,5 @@
   <!-- <include file="$(find mattbot_image_detection)/launch/face_detection.launch"> -->
     <!-- No arguments needed -->
   <!-- </include> -->
-
-  <include file="$(find mattbot_image_detection)/launch/face_detection.launch">
-    <!-- No arguments needed -->
-  </include>
 
 </launch>
