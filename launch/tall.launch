@@ -43,6 +43,10 @@
       <!-- No arguments needed -->
     </include>
   </group>
+
+  <include file="$(find mattbot_mcl)/launch/localization_quality.launch">
+    <!-- No arguments needed -->
+  </include>
   
   <!-- Launch the Camera -->
   <include file="$(find astra_camera)/launch/astra.launch">
