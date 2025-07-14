@@ -8,6 +8,7 @@
 
   <!-- Define car argument with default as false -->
   <arg name="car" default="false"/>
+  <arg name="sqlite" default="false"/>    
 
   <include file="$(find mattbot_bringup)/launch/minimal.launch">
     <arg name="car" value="$(arg car)"/>
@@ -64,7 +65,7 @@
   </include>
 
   <include file="$(find mattbot_dds)/launch/dds.launch">
-    <!-- No arguments needed -->
+    <arg name="sqlite" value="$(arg sqlite)"/>
   </include>
 
   <include file="$(find mattbot_record)/launch/audio_with_speech_detection.launch">
