@@ -70,7 +70,7 @@
 
   <!-- <include file="$(find mattbot_record)/launch/audio_with_speech_detection.launch"> -->
     <!-- No arguments needed-->
-  </include>
+  <!-- </include> -->
 
   <!-- <include file="$(find mattbot_image_detection)/launch/face_detection.launch"> -->
     <!-- No arguments needed -->
