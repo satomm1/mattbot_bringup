@@ -67,7 +67,7 @@
     <!-- No arguments needed -->
   </include>
 
-  <include file="$(find mattbot_record)/launch/audio_with_speech_detection.launch">
+  <!-- <include file="$(find mattbot_record)/launch/audio_with_speech_detection.launch"> -->
     <!-- No arguments needed-->
   </include>
 
