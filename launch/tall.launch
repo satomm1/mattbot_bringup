@@ -2,6 +2,7 @@
 <launch>
 
   <arg name="tall" default="true"/>
+  <arg name="patrol" default="false"/>
 
   <!-- Specify the package name -->
   <arg name="package" default="mattbot_bringup"/>
@@ -61,7 +62,7 @@
   </include> 
 
   <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_tall.launch">
-    <!-- No arguments needed -->
+    <arg name="patrol" value="$(arg patrol)"/>
   </include>
 
   <include file="$(find mattbot_dds)/launch/dds.launch">
