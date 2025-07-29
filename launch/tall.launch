@@ -51,7 +51,7 @@
   </include>
   
   <!-- Launch the Camera -->
-  <include file="$(find astra_camera)/launch/astra.launch">
+  <include file="$(find astra_camera)/launch/astra_pro_plus.launch">
     <!-- No arguments needed -->
   </include>
 
