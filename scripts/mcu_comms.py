@@ -95,7 +95,7 @@ class MCU_Comms:
             bringup_message = [90, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             self.spi.writebytes([55])
             rcvd = self.spi.xfer(bringup_message)
-            print(rcvd)
+            # print(rcvd)
 
             # Check if the MCU has confirmed bringup
             if rcvd[0] == 0 and rcvd[1] == 255 and rcvd[2] == 0:
@@ -121,7 +121,7 @@ class MCU_Comms:
         # Send the confirmation message to the MCU
         self.spi.writebytes([55])
         rcvd = self.spi.xfer2(confirmation_message)
-        print(rcvd)
+        # print(rcvd)
 
     def vel_callback(self, data):
         """
@@ -171,6 +171,10 @@ class MCU_Comms:
         ang_vel_z = 0
         qx = 0
         qy = 0
+
+        pos_x = 0
+        pos_y = 0
+        pos_theta = 0
 
         num_unknown = 0
 
@@ -374,6 +378,7 @@ class MCU_Comms:
                         print("Button 3 released")
             else:
                 num_unknown += 1
+                # print(rcvd)
 
                 if num_unknown >= 20:
                     print("Resetting")
