@@ -52,8 +52,8 @@ class MCU_Comms:
         # Get ROBOT_ID from environment variable
         robot_id_env = os.getenv('ROBOT_ID')
 
-        # Get MCU_ID from environment variable
-        mcu_id = os.getenv('MCU_ID', '3')  # Default to '3' if not set
+        # Get MCU_SPI from environment variable
+        mcu_id = os.getenv('MCU_SPI', '3')  # Default to '3' if not set
 
         # Open the correct SPI port based on the mcu_id, (spi3 by default)
         if mcu_id == "1":
