@@ -367,6 +367,16 @@ class MCU_Comms:
                         print("Button 3 pressed")
                     else:
                         print("Button 3 released")
+            elif rcvd[0] == 6: # Received temperature/humidity data
+                num_unknown = 0  # Reset unknown message count
+
+                temp = bytes_to_float(list(reversed(rcvd[1:5])))
+                humidity = bytes_to_float(list(reversed(rcvd[5:9])))
+            elif rcvd[0] == 5: # Received air quality data
+                num_unknown = 0  # Reset unknown message count
+
+                voc = struct.unpack('i', bytes(list(reversed(rcvd[1:5]))))[0]
+                nox = struct.unpack('i', bytes(list(reversed(rcvd[5:9]))))[0]
             else:
                 num_unknown += 1
 
