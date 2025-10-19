@@ -2,12 +2,14 @@
 <launch>
 
   <arg name="tall" default="true"/>
+  <arg name="patrol" default="false"/>
 
   <!-- Specify the package name -->
   <arg name="package" default="mattbot_bringup"/>
 
   <!-- Define car argument with default as false -->
   <arg name="car" default="false"/>
+  <arg name="sqlite" default="false"/>    
 
   <include file="$(find mattbot_bringup)/launch/minimal.launch">
     <arg name="car" value="$(arg car)"/>
@@ -25,17 +27,31 @@
       <arg name="scan_input" value="/scan_original"/>
       <arg name="scan_output" value="/scan"/>  
     </include>
+
+    <!-- Launch AMCL for the car -->
+    <include file="$(find mattbot_bringup)/launch/amcl_car.launch">
+      <!-- No arguments needed -->
+    </include>
   </group>
   
   <group unless="$(arg car)">
     <!-- Launch the LIDAR without inclined correction -->
     <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch">
+      <!-- No arguments needed -->
+    </include>
 
+    <!-- Launch AMCL for the robot -->
+    <include file="$(find mattbot_bringup)/launch/amcl.launch">
+      <!-- No arguments needed -->
     </include>
   </group>
+
+  <include file="$(find mattbot_mcl)/launch/localization_quality.launch">
+    <!-- No arguments needed -->
+  </include>
   
   <!-- Launch the Camera -->
-  <include file="$(find astra_camera)/launch/astra.launch">
+  <include file="$(find astra_camera)/launch/astra_pro_plus.launch">
     <!-- No arguments needed -->
   </include>
 
@@ -45,29 +61,20 @@
     <arg name="tall" default="$(arg tall)"/>
   </include> 
 
-  <!-- Launch the Monte Carlo Localization -->
-  <include file="$(find mattbot_mcl)/launch/mcl.launch">
-    <!-- No arguments needed -->
-  </include>
-
   <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_tall.launch">
-    <!-- No arguments needed -->
+    <arg name="patrol" value="$(arg patrol)"/>
   </include>
 
   <include file="$(find mattbot_dds)/launch/dds.launch">
-    <!-- No arguments needed -->
+    <arg name="sqlite" value="$(arg sqlite)"/>
   </include>
 
-  <include file="$(find mattbot_record)/launch/audio_with_speech_detection.launch">
+  <!-- <include file="$(find mattbot_record)/launch/audio_with_speech_detection.launch"> -->
     <!-- No arguments needed-->
-  </include>
+  <!-- </include> -->
 
   <!-- <include file="$(find mattbot_image_detection)/launch/face_detection.launch"> -->
     <!-- No arguments needed -->
   <!-- </include> -->
-
-  <include file="$(find mattbot_image_detection)/launch/face_detection.launch">
-    <!-- No arguments needed -->
-  </include>
 
 </launch>

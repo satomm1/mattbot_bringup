@@ -51,10 +51,15 @@ class MCU_Comms:
 
         # Get ROBOT_ID from environment variable
         robot_id_env = os.getenv('ROBOT_ID')
-        if robot_id_env == "1":
-            self.spi.open(2,0)  # open spi port 2, device (CS) 0
-        elif robot_id_env == "2":
+
+        # Get MCU_SPI from environment variable
+        mcu_id = os.getenv('MCU_SPI', '3')  # Default to '3' if not set
+
+        # Open the correct SPI port based on the mcu_id, (spi3 by default)
+        if mcu_id == "1":
             self.spi.open(0,0)  # open spi port 0, device (CS) 0
+        elif mcu_id == "3":
+            self.spi.open(2,0)  # open spi port 2, device (CS) 0
         else:
             self.spi.open(0,0)  # open spi port 0, device (CS) 0
 
@@ -90,7 +95,7 @@ class MCU_Comms:
             bringup_message = [90, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             self.spi.writebytes([55])
             rcvd = self.spi.xfer(bringup_message)
-            print(rcvd)
+            # print(rcvd)
 
             # Check if the MCU has confirmed bringup
             if rcvd[0] == 0 and rcvd[1] == 255 and rcvd[2] == 0:
@@ -116,7 +121,7 @@ class MCU_Comms:
         # Send the confirmation message to the MCU
         self.spi.writebytes([55])
         rcvd = self.spi.xfer2(confirmation_message)
-        print(rcvd)
+        # print(rcvd)
 
     def vel_callback(self, data):
         """
@@ -166,6 +171,10 @@ class MCU_Comms:
         ang_vel_z = 0
         qx = 0
         qy = 0
+
+        pos_x = 0
+        pos_y = 0
+        pos_theta = 0
 
         num_unknown = 0
 
@@ -379,6 +388,7 @@ class MCU_Comms:
                 nox = struct.unpack('i', bytes(list(reversed(rcvd[5:9]))))[0]
             else:
                 num_unknown += 1
+                # print(rcvd)
 
                 if num_unknown >= 20:
                     print("Resetting")
