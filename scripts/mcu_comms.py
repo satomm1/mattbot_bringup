@@ -14,6 +14,7 @@ from nav_msgs.msg import Odometry
 from tf2_msgs.msg import TFMessage
 from tf.transformations import quaternion_from_euler
 from std_msgs.msg import Float32, UInt8
+from mattbot_bringup.msg import AirQuality
 
 BAUD_RATE = 1000000 # Baud rate for SPI
 
@@ -38,6 +39,9 @@ class MCU_Comms:
         
         # # Publish the imu data
         # self.imu_pub = rospy.Publisher("/imu/data", Imu, queue_size=10)
+
+        # Publish the air quality data
+        self.air_quality_pub = rospy.Publisher("/air_quality", AirQuality, queue_size=10)
 
         self.roll_pitch_pub = rospy.Publisher("/imu/roll_pitch", Quaternion, queue_size=10)
         
@@ -175,6 +179,9 @@ class MCU_Comms:
         pos_x = 0
         pos_y = 0
         pos_theta = 0
+
+        air_quality_msg = AirQuality()
+        aqi_publish_count = 0
 
         num_unknown = 0
 
@@ -379,13 +386,27 @@ class MCU_Comms:
             elif rcvd[0] == 6: # Received temperature/humidity data
                 num_unknown = 0  # Reset unknown message count
 
-                temp = bytes_to_float(list(reversed(rcvd[1:5])))
-                humidity = bytes_to_float(list(reversed(rcvd[5:9])))
+                # Only publish approximately once a second
+                aqi_publish_count += 1
+                if aqi_publish_count >= 33:
+                    temp = bytes_to_float(list(reversed(rcvd[1:5])))
+                    humidity = bytes_to_float(list(reversed(rcvd[5:9])))
+
+                    air_quality_msg.header.stamp = rospy.Time.now()
+                    air_quality_msg.temperature = temp
+                    air_quality_msg.relative_humidity = humidity
             elif rcvd[0] == 5: # Received air quality data
                 num_unknown = 0  # Reset unknown message count
 
-                voc = struct.unpack('i', bytes(list(reversed(rcvd[1:5]))))[0]
-                nox = struct.unpack('i', bytes(list(reversed(rcvd[5:9]))))[0]
+                if aqi_publish_count >= 33:
+                    aqi_publish_count = 0
+
+                    voc = struct.unpack('i', bytes(list(reversed(rcvd[1:5]))))[0]
+                    nox = struct.unpack('i', bytes(list(reversed(rcvd[5:9]))))[0]
+
+                    air_quality_msg.voc_index = float(voc)
+                    air_quality_msg.nox_index = float(nox)
+                    self.air_quality_pub.publish(air_quality_msg)
             else:
                 num_unknown += 1
                 # print(rcvd)
