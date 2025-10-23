@@ -1,11 +1,16 @@
-<!-- minimal.launch -->
+<!-- short.launch -->
 <launch>
+
+  <arg name="tall" default="false"/>
+  <arg name="patrol" default="false"/>
+  <arg name="camera_type" default="$(env CAMERA_TYPE)"/>
 
   <!-- Specify the package name -->
   <arg name="package" default="mattbot_bringup"/>
 
   <!-- Define car argument with default as false -->
   <arg name="car" default="false"/>
+  <arg name="sqlite" default="false"/>  
 
   <include file="$(find mattbot_bringup)/launch/minimal.launch">
     <arg name="car" value="$(arg car)"/>
@@ -23,6 +28,11 @@
       <arg name="scan_input" value="/scan_original"/>
       <arg name="scan_output" value="/scan"/>  
     </include>
+
+    <!-- Launch AMCL for the car -->
+    <include file="$(find mattbot_bringup)/launch/amcl_car.launch">
+      <!-- No arguments needed -->
+    </include>
   </group>
   
   <group unless="$(arg car)">
@@ -30,40 +40,45 @@
     <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch">
 
     </include>
+
+    <!-- Launch AMCL for the robot -->
+    <include file="$(find mattbot_bringup)/launch/amcl.launch">
+      <!-- No arguments needed -->
+    </include>
   </group>
-  
-  <!-- Launch the Camera -->
-  <include file="$(find astra_camera)/launch/astra.launch">
+
+  <include file="$(find mattbot_mcl)/launch/localization_quality.launch">
     <!-- No arguments needed -->
   </include>
 
-  <!-- Launch the Image Detector -->
-  <!-- <include file="$(find mattbot_image_detection)/launch/short.launch"> -->
-    <!-- No arguments needed -->
-  <!-- </include> -->
+  <!-- Launch the Camera node -->
+  <group if="$(eval arg('camera_type') == 'astra_pro_plus')">
+    <!-- Launch the astra pro plus camera-->
+    <include file="$(find astra_camera)/launch/astra_pro_plus.launch">
+      <!-- No arguments needed -->
+    </include>
+  </group>
 
-  <!-- Launch the Person Tracker -->
-  <!-- <include file="$(find mattbot_image_detection)/launch/person_tracker.launch"> -->
-    <!-- No arguments needed -->
-  <!-- </include> -->
+  <group unless="$(eval arg('camera_type') == 'astra_pro_plus')">
+    <!-- If not astra_pro_plus, default to astra -->
+    <include file="$(find astra_camera)/launch/astra.launch">
+      <!-- No arguments needed -->
+    </include>
+  </group>
 
-  <!-- Launch the OSOD -->
-  <include file="$(find image_detection_with_unknowns)/launch/detect_updated.launch">
-    <!-- No arguments needed -->
-  </include>
+  <!-- Launch the OSOD node -->
+  <include file="$(find mattbot_image_detection)/launch/detect_updated_osod.launch">
+    <arg name="tall" default="$(arg tall)"/>
+  </include> 
 
-  <!-- Launch the Monte Carlo Localization -->
-  <include file="$(find mattbot_mcl)/launch/mcl.launch">
-    <!-- No arguments needed -->
-  </include>
-
+  <!-- Launch the Localization and Navigation node with combined map for short robot -->
   <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_short.launch">
-    <!-- No arguments needed -->
+    <!-- <arg name="patrol" value="$(arg patrol)"/> -->
   </include>
 
+  <!-- Launch the DDS (wireless communications) node -->
   <include file="$(find mattbot_dds)/launch/dds.launch">
-    <!-- No arguments needed -->
+    <arg name="sqlite" value="$(arg sqlite)"/>
   </include>
-
 
 </launch>
