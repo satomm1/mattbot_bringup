@@ -1,8 +1,9 @@
-<!-- minimal.launch -->
+<!-- tall.launch -->
 <launch>
 
   <arg name="tall" default="true"/>
   <arg name="patrol" default="false"/>
+  <arg name="camera_type" default="$(env CAMERA_TYPE)"/>
 
   <!-- Specify the package name -->
   <arg name="package" default="mattbot_bringup"/>
@@ -51,10 +52,19 @@
   </include>
   
   <!-- Launch the Camera -->
-  <include file="$(find astra_camera)/launch/astra_pro_plus.launch">
-    <!-- No arguments needed -->
-  </include>
+  <group if="$(eval arg('camera_type') == 'astra_pro_plus')">
+    <!-- Launch the astra pro plus camera-->
+    <include file="$(find astra_camera)/launch/astra_pro_plus.launch">
+      <!-- No arguments needed -->
+    </include>
+  </group>
 
+  <group unless="$(eval arg('camera_type') == 'astra_pro_plus')">
+    <!-- If not astra_pro_plus, default to astra -->
+    <include file="$(find astra_camera)/launch/astra.launch">
+      <!-- No arguments needed -->
+    </include>
+  </group>
 
   <!-- Launch the OSOD -->
   <include file="$(find mattbot_image_detection)/launch/detect_updated_osod.launch">
