@@ -49,6 +49,7 @@
   </group>
 
   <include file="$(find mattbot_mcl)/launch/localization_quality.launch">
+    <arg name="tall" value="$(arg tall)"/>
     <!-- No arguments needed -->
   </include>
 

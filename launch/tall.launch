@@ -49,7 +49,7 @@
   </group>
 
   <include file="$(find mattbot_mcl)/launch/localization_quality.launch">
-    <!-- No arguments needed -->
+    <arg name="tall" default="$(arg tall)"/>
   </include>
   
   <!-- Launch the Camera -->
