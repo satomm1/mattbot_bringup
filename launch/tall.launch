@@ -74,6 +74,8 @@
 
   <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_tall.launch">
     <arg name="patrol" value="$(arg patrol)"/>
+    <arg name="tall"   value="$(arg tall)"/>
+    <arg name="car"    value="$(arg car)"/>
   </include>
 
   <include file="$(find mattbot_dds)/launch/dds.launch">
