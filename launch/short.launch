@@ -12,6 +12,9 @@
   <arg name="car" default="false"/>
   <arg name="sqlite" default="false"/>  
 
+  <!-- Set the use_social_astar parameter based on the social argument -->
+  <arg name="social" default="false"/>
+
   <include file="$(find mattbot_bringup)/launch/minimal.launch">
     <arg name="car" value="$(arg car)"/>
     <arg name="tall" value="$(arg tall)"/>
@@ -76,6 +79,7 @@
   <!-- Launch the Localization and Navigation node with combined map for short robot -->
   <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_short.launch">
     <!-- <arg name="patrol" value="$(arg patrol)"/> -->
+    <arg name="social" value="$(arg social)"/>
   </include>
 
   <!-- Launch the DDS (wireless communications) node -->
