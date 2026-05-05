@@ -15,6 +15,9 @@
   <!-- Set the use_social_astar parameter based on the social argument -->
   <arg name="social" default="false"/>
 
+  <!-- Use multi-agent navigator (external_goal_multi, DDS planned-path handoff) instead of localize_and_navigate2 -->
+  <arg name="multi_agent_nav" default="false"/>
+
   <include file="$(find mattbot_bringup)/launch/minimal.launch">
     <arg name="car" value="$(arg car)"/>
     <arg name="tall" value="$(arg tall)"/>
@@ -76,11 +79,18 @@
     <arg name="tall" default="$(arg tall)"/>
   </include> 
 
-  <!-- Launch the Localization and Navigation node with combined map for short robot -->
-  <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_short.launch">
-    <!-- <arg name="patrol" value="$(arg patrol)"/> -->
-    <arg name="social" value="$(arg social)"/>
-  </include>
+  <!-- Localization and navigation: default v2, or multi-agent variant when multi_agent_nav is true -->
+  <group unless="$(arg multi_agent_nav)">
+    <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_short.launch">
+      <arg name="social" value="$(arg social)"/>
+    </include>
+  </group>
+  <group if="$(arg multi_agent_nav)">
+    <include file="$(find mattbot_navigation)/launch/localize_and_navigate_multi_agent_short.launch">
+      <arg name="social" value="$(arg social)"/>
+      <arg name="patrol" value="$(arg patrol)"/>
+    </include>
+  </group>
 
   <!-- Launch the DDS (wireless communications) node -->
   <include file="$(find mattbot_dds)/launch/dds.launch">
