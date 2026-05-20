@@ -15,7 +15,7 @@
   <!-- Set the use_social_astar parameter based on the social argument -->
   <arg name="social" default="false"/>
 
-  <!-- Use multi-agent navigator (external_goal_multi, DDS planned-path handoff) instead of localize_and_navigate2 -->
+  <!-- Use multi-agent navigator (external_goal_multi, DDS planned-path handoff) instead of localize_and_navigate -->
   <arg name="multi_agent_nav" default="false"/>
 
   <include file="$(find mattbot_bringup)/launch/minimal.launch">
