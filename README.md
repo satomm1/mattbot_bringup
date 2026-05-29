@@ -13,6 +13,7 @@ The primary launch files are `minimal.launch` and `robot.launch` and `get_refere
 - **sense_and_localize.launch**: Launches the stack necessary for localizing within a new map. (mcu_comms, twist multiplexer, LIDAR, Camera, localization)
 - **short.launch**: Launches the stack for operating the short robot (mcu_comms, twist multiplexer, LiDAR, Camera, localization, object detection, navigation, dds communication)
 - **tall.launch**: Launches the stack for operating the tall robot (mcu_comms, twist multiplexer, LiDAR, Camera, localization, object detection, navigation, dds communication)
+- **multi_agent_short.launch**: Launches the short.launch stack, but enables multi-agent planning
 
 ## Using This Package
 To run the launch files, use a call similar to:
