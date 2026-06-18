@@ -1,0 +1,64 @@
+<!-- kaist.launch -->
+<!-- Tall-robot bringup for KAIST deployment. Same stack as tall.launch with site-fixed defaults. -->
+<launch>
+
+  <!-- KAIST configuration (edit these for the KAIST setup) -->
+  <arg name="tall" default="true"/>
+  <arg name="patrol" default="false"/>
+  <arg name="camera_type" default="astra_pro_plus"/>
+  <arg name="car" default="true"/>
+  <arg name="sqlite" default="false"/>
+
+  <arg name="package" default="mattbot_bringup"/>
+
+  <include file="$(find mattbot_bringup)/launch/minimal.launch">
+    <arg name="car" value="$(arg car)"/>
+    <arg name="tall" value="$(arg tall)"/>
+  </include>
+
+  <group if="$(arg car)">
+    <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch">
+      <arg name="scan_topic" value="scan_original"/>
+    </include>
+
+    <include file="$(find mattbot_mcl)/launch/lidar_correction.launch">
+      <arg name="scan_input" value="/scan_original"/>
+      <arg name="scan_output" value="/scan"/>
+    </include>
+
+    <include file="$(find mattbot_bringup)/launch/amcl_car.launch"/>
+  </group>
+
+  <group unless="$(arg car)">
+    <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch"/>
+
+    <include file="$(find mattbot_bringup)/launch/amcl.launch"/>
+  </group>
+
+  <include file="$(find mattbot_mcl)/launch/localization_quality.launch">
+    <arg name="tall" value="$(arg tall)"/>
+  </include>
+
+  <group if="$(eval arg('camera_type') == 'astra_pro_plus')">
+    <include file="$(find astra_camera)/launch/astra_pro_plus.launch"/>
+  </group>
+
+  <group unless="$(eval arg('camera_type') == 'astra_pro_plus')">
+    <include file="$(find astra_camera)/launch/astra.launch"/>
+  </group>
+
+  <include file="$(find mattbot_image_detection)/launch/detect_updated_osod.launch">
+    <arg name="tall" value="$(arg tall)"/>
+  </include>
+
+  <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_tall.launch">
+    <arg name="patrol" value="$(arg patrol)"/>
+    <arg name="tall" value="$(arg tall)"/>
+    <arg name="car" value="$(arg car)"/>
+  </include>
+
+  <include file="$(find mattbot_dds)/launch/dds.launch">
+    <arg name="sqlite" value="$(arg sqlite)"/>
+  </include>
+
+</launch>
