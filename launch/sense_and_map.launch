@@ -42,4 +42,12 @@
       <arg name="output_location" value="log"/>
   </include>
 
+  <arg name="auto_save" default="true"/>
+  <arg name="auto_save_map_name" default="autosave"/>
+
+  <node pkg="mattbot_mcl" type="map_autosave_guard.py" name="map_autosave_guard" output="screen">
+    <param name="auto_save" value="$(arg auto_save)"/>
+    <param name="map_name" value="$(arg auto_save_map_name)"/>
+  </node>
+
 </launch>
