@@ -16,36 +16,14 @@
     <arg name="tall" value="$(arg tall)"/>
   </include>
 
-  <group if="$(arg car)">
-    <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch">
-      <arg name="scan_topic" value="scan_original"/>
-    </include>
-
-    <include file="$(find mattbot_mcl)/launch/lidar_correction.launch">
-      <arg name="scan_input" value="/scan_original"/>
-      <arg name="scan_output" value="/scan"/>
-    </include>
-
-    <include file="$(find mattbot_bringup)/launch/amcl_car.launch"/>
-  </group>
-
-  <group unless="$(arg car)">
-    <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch"/>
-
-    <include file="$(find mattbot_bringup)/launch/amcl.launch"/>
-  </group>
+  <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch"/>
+  <include file="$(find mattbot_bringup)/launch/amcl_kaist.launch"/>
 
   <include file="$(find mattbot_mcl)/launch/localization_quality.launch">
     <arg name="tall" value="$(arg tall)"/>
   </include>
 
-  <group if="$(eval arg('camera_type') == 'astra_pro_plus')">
-    <include file="$(find astra_camera)/launch/astra_pro_plus.launch"/>
-  </group>
-
-  <group unless="$(eval arg('camera_type') == 'astra_pro_plus')">
-    <include file="$(find astra_camera)/launch/astra.launch"/>
-  </group>
+  <include file="$(find astra_camera)/launch/astra_pro_plus.launch"/>
 
   <include file="$(find mattbot_image_detection)/launch/detect_updated_osod.launch">
     <arg name="tall" value="$(arg tall)"/>
