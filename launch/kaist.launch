@@ -15,7 +15,7 @@
   <arg name="capture_ingest_port" default="8080"/>
 
   <!-- Planning radius from robot center (m); passed to navigator (~robot_clearance). -->
-  <arg name="robot_clearance" default="0.3"/>
+  <arg name="robot_clearance" default="0.4"/>
 
   <!-- Nominal trajectory speed (m/s) for path smoothing; read as /cruising_velocity by navigator. -->
   <arg name="cruising_velocity" default="0.40"/>
