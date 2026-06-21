@@ -9,6 +9,9 @@
   <arg name="car" default="true"/>
   <arg name="sqlite" default="false"/>
 
+  <!-- Planning radius from robot center (m); passed to navigator (~robot_clearance). -->
+  <arg name="robot_clearance" default="0.3"/>
+
   <arg name="package" default="mattbot_bringup"/>
 
   <include file="$(find mattbot_bringup)/launch/minimal.launch">
@@ -33,6 +36,7 @@
     <arg name="patrol" value="$(arg patrol)"/>
     <arg name="tall" value="$(arg tall)"/>
     <arg name="car" value="$(arg car)"/>
+    <arg name="robot_clearance" value="$(arg robot_clearance)"/>
   </include>
 
   <include file="$(find mattbot_dds)/launch/dds.launch">

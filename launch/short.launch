@@ -15,6 +15,9 @@
   <!-- Set the use_social_astar parameter based on the social argument -->
   <arg name="social" default="false"/>
 
+  <!-- Planning radius from robot center (m); passed to navigator (~robot_clearance). -->
+  <arg name="robot_clearance" default="0.3"/>
+
   <!-- Use multi-agent navigator (external_goal_multi, DDS planned-path handoff) instead of localize_and_navigate -->
   <arg name="multi_agent_nav" default="false"/>
 
@@ -83,6 +86,7 @@
   <group unless="$(arg multi_agent_nav)">
     <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_short.launch">
       <arg name="social" value="$(arg social)"/>
+      <arg name="robot_clearance" value="$(arg robot_clearance)"/>
     </include>
   </group>
   <group if="$(arg multi_agent_nav)">
