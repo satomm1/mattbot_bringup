@@ -9,6 +9,10 @@
   <arg name="car" default="true"/>
   <arg name="front_wheel_drive" default="true"/>
   <arg name="sqlite" default="false"/>
+  <arg name="capture" default="false"/>
+  <arg name="capture_spool_dir" default="/var/robot_capture/spool"/>
+  <arg name="capture_ingest_ip" default="192.168.50.2"/>
+  <arg name="capture_ingest_port" default="8080"/>
 
   <!-- Planning radius from robot center (m); passed to navigator (~robot_clearance). -->
   <arg name="robot_clearance" default="0.3"/>
@@ -48,6 +52,13 @@
 
   <include file="$(find mattbot_dds)/launch/dds.launch">
     <arg name="sqlite" value="$(arg sqlite)"/>
+  </include>
+
+  <include file="$(find mattbot_capture)/launch/capture.launch">
+    <arg name="enabled" value="$(arg capture)"/>
+    <arg name="spool_dir" value="$(arg capture_spool_dir)"/>
+    <arg name="ingest_ip" value="$(arg capture_ingest_ip)"/>
+    <arg name="ingest_port" value="$(arg capture_ingest_port)"/>
   </include>
 
 </launch>
