@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<robot name="mattbot">
+  <!-- Base footprint -->
+  <link name="base_footprint"/>
+  <!-- This is the center of the wheels, at the ground level -->
+
+  <!-- Base link -->
+  <link name="base_link">
+    <!-- This is the geometric center of the first level of the robot -->
+  </link>
+
+  <!-- Joint connecting base_footprint to base_link -->
+  <joint name="base_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="-0.1243076 0 0.0224" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Laser link -->
+  <link name="laser_frame"/>
+
+  <!-- Joint connecting base_link to laser -->
+  <joint name="laser_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="laser_frame"/>
+    <origin xyz="0 0 0.998" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Camera link -->
+  <link name="camera_link"/>
+
+  <!-- Joint connecting base_link to camera -->
+  <joint name="camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+    <origin xyz="0.127 0 0.764" rpy="3.1416 0 0"/>
+  </joint>
+</robot>

@@ -7,6 +7,7 @@
   <arg name="patrol" default="false"/>
   <arg name="camera_type" default="astra_pro_plus"/>
   <arg name="car" default="true"/>
+  <arg name="front_wheel_drive" default="true"/>
   <arg name="sqlite" default="false"/>
 
   <arg name="package" default="mattbot_bringup"/>
@@ -14,6 +15,7 @@
   <include file="$(find mattbot_bringup)/launch/minimal.launch">
     <arg name="car" value="$(arg car)"/>
     <arg name="tall" value="$(arg tall)"/>
+    <arg name="front_wheel_drive" value="$(arg front_wheel_drive)"/>
   </include>
 
   <include file="$(find rplidar_ros)/launch/rplidar_a2m12.launch"/>
