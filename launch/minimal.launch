@@ -5,6 +5,7 @@
   <arg name="package" default="mattbot_bringup"/>
   <arg name="car" default="false"/>
   <arg name="tall" default="true"/>
+  <arg name="front_wheel_drive" default="false"/>
 
   <!-- Launch a node from the package -->
   <node pkg="$(arg package)" type="mcu_comms.py" name="mcu_comms_node" output="screen">
@@ -18,8 +19,15 @@
 
   <!-- Conditionally set parameter name based on car argument -->
   <group if="$(arg car)">
-    <param name="~robot_description" value="$(find mattbot_bringup)/urdf/robot_tf_car.urdf"/>
-    <node pkg="$(arg package)" type="publish_transforms.py" name="rob_st_pub" output="log" />
+    <!-- Nested conditional: set the proper robot transform depending on if front wheel drive is used -->
+    <group if="$(arg front_wheel_drive)">
+      <param name="~robot_description" value="$(find mattbot_bringup)/urdf/robot_tf_car_front_wheel_drive.urdf"/>
+      <node pkg="$(arg package)" type="publish_transforms.py" name="rob_st_pub" output="log" />
+    </group>
+    <group unless="$(arg front_wheel_drive)">
+      <param name="~robot_description" value="$(find mattbot_bringup)/urdf/robot_tf_car.urdf"/>
+      <node pkg="$(arg package)" type="publish_transforms.py" name="rob_st_pub" output="log" />
+    </group>
   </group>
   <group unless="$(arg car)">
     <!-- Nested conditional: set the proper robot transform depending on if tall or short -->
