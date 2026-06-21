@@ -15,6 +15,10 @@
   <!-- Planning radius from robot center (m); passed to navigator (~robot_clearance). -->
   <arg name="robot_clearance" default="0.3"/>
 
+  <!-- Nominal trajectory speed (m/s) for path smoothing; read as /cruising_velocity by navigator. -->
+  <arg name="cruising_velocity" default="0.40"/>
+  <param name="cruising_velocity" value="$(arg cruising_velocity)"/>
+
   <include file="$(find mattbot_bringup)/launch/minimal.launch">
     <arg name="car" value="$(arg car)"/>
     <arg name="tall" value="$(arg tall)"/>
@@ -80,6 +84,7 @@
     <arg name="tall"   value="$(arg tall)"/>
     <arg name="car"    value="$(arg car)"/>
     <arg name="robot_clearance" value="$(arg robot_clearance)"/>
+    <arg name="cruising_velocity" value="$(arg cruising_velocity)"/>
   </include>
 
   <include file="$(find mattbot_dds)/launch/dds.launch">
