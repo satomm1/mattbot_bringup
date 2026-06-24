@@ -29,6 +29,9 @@
   <!-- Use multi-agent navigator (external_goal_multi, DDS planned-path handoff) instead of localize_and_navigate -->
   <arg name="multi_agent_nav" default="false"/>
 
+  <!-- Send unknown-object images to the LLM for labeling (gemini_bridge) -->
+  <arg name="use_llm_for_images" default="false"/>
+
   <include file="$(find mattbot_bringup)/launch/minimal.launch">
     <arg name="car" value="$(arg car)"/>
     <arg name="tall" value="$(arg tall)"/>
@@ -88,6 +91,7 @@
   <!-- Launch the OSOD node -->
   <include file="$(find mattbot_image_detection)/launch/detect_updated_osod.launch">
     <arg name="tall" default="$(arg tall)"/>
+    <arg name="use_llm_for_images" value="$(arg use_llm_for_images)"/>
   </include> 
 
   <!-- Localization and navigation: default v2, or multi-agent variant when multi_agent_nav is true -->

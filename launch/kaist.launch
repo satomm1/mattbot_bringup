@@ -15,6 +15,9 @@
   <arg name="capture_ingest_ip" default="192.168.50.2"/>
   <arg name="capture_ingest_port" default="8080"/>
 
+  <!-- Send unknown-object images to the LLM for labeling (gemini_bridge) -->
+  <arg name="use_llm_for_images" default="false"/>
+
   <!-- Planning radius from robot center (m); passed to navigator (~robot_clearance). -->
   <arg name="robot_clearance" default="0.4"/>
 
@@ -41,6 +44,7 @@
 
   <include file="$(find mattbot_image_detection)/launch/detect_updated_osod.launch">
     <arg name="tall" value="$(arg tall)"/>
+    <arg name="use_llm_for_images" value="$(arg use_llm_for_images)"/>
   </include>
 
   <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_tall.launch">

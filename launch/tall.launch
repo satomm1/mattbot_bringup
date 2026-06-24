@@ -25,6 +25,9 @@
   <arg name="cruising_velocity" default="0.40"/>
   <param name="cruising_velocity" value="$(arg cruising_velocity)"/>
 
+  <!-- Send unknown-object images to the LLM for labeling (gemini_bridge) -->
+  <arg name="use_llm_for_images" default="false"/>
+
   <include file="$(find mattbot_bringup)/launch/minimal.launch">
     <arg name="car" value="$(arg car)"/>
     <arg name="tall" value="$(arg tall)"/>
@@ -83,6 +86,7 @@
   <!-- Launch the OSOD -->
   <include file="$(find mattbot_image_detection)/launch/detect_updated_osod.launch">
     <arg name="tall" default="$(arg tall)"/>
+    <arg name="use_llm_for_images" value="$(arg use_llm_for_images)"/>
   </include> 
 
   <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_tall.launch">
