@@ -1,36 +1,33 @@
 <!-- short.launch -->
+<!-- Full stack for the short robot. Override args at launch, e.g. capture:=true multi_agent_nav:=true -->
 <launch>
 
-  <arg name="tall" default="false"/>
-  <arg name="patrol" default="false"/>
-  <arg name="camera_type" default="$(env CAMERA_TYPE)"/>
+  <!-- Robot / hardware -->
+  <arg name="tall" default="false"/>             <!-- Short form factor: OSOD model, nav map, MCL tuning -->
+  <arg name="car" default="false"/>              <!-- Car platform: inclined LiDAR correction + amcl_car -->
+  <arg name="camera_type" default="$(env CAMERA_TYPE)"/>  <!-- astra_pro_plus or astra (depth camera launch) -->
 
-  <!-- Specify the package name -->
-  <arg name="package" default="mattbot_bringup"/>
-
-  <!-- Define car argument with default as false -->
-  <arg name="car" default="false"/>
-  <arg name="sqlite" default="false"/>  
-  <arg name="capture" default="false"/>
-  <arg name="capture_spool_dir" default="/workspace/catkin_ws/data/capture_spool"/>
-  <arg name="capture_ingest_ip" default="192.168.50.2"/>
-  <arg name="capture_ingest_port" default="8080"/>
-
-  <!-- Set the use_social_astar parameter based on the social argument -->
-  <arg name="social" default="false"/>
-
-  <!-- Planning radius from robot center (m); passed to navigator (~robot_clearance). -->
-  <arg name="robot_clearance" default="0.3"/>
-
-  <!-- Nominal trajectory speed (m/s) for path smoothing; read as /cruising_velocity by navigator. -->
-  <arg name="cruising_velocity" default="0.40"/>
+  <!-- Navigation -->
+  <arg name="patrol" default="false"/>           <!-- Enable patrol (multi_agent nav only when multi_agent_nav:=true) -->
+  <arg name="social" default="false"/>           <!-- Social A* planning in navigator -->
+  <arg name="multi_agent_nav" default="false"/>  <!-- Multi-agent navigator + DDS path handoff (vs standard short nav) -->
+  <arg name="robot_clearance" default="0.3"/>    <!-- Planning radius from robot center (m); ~robot_clearance -->
+  <arg name="cruising_velocity" default="0.40"/> <!-- Nominal path speed (m/s); published as /cruising_velocity -->
   <param name="cruising_velocity" value="$(arg cruising_velocity)"/>
 
-  <!-- Use multi-agent navigator (external_goal_multi, DDS planned-path handoff) instead of localize_and_navigate -->
-  <arg name="multi_agent_nav" default="false"/>
+  <!-- Perception -->
+  <arg name="use_llm_for_images" default="false"/>  <!-- Send unknown-object crops to gemini_bridge for labeling -->
 
-  <!-- Send unknown-object images to the LLM for labeling (gemini_bridge) -->
-  <arg name="use_llm_for_images" default="false"/>
+  <!-- Data capture (images; no audio stack in short.launch) -->
+  <arg name="capture" default="false"/>            <!-- mattbot_capture: capture_node, uploader, auto_trigger -->
+  <arg name="capture_spool_dir" default="/workspace/catkin_ws/data/capture_spool"/>  <!-- Local spool for image sessions -->
+  <arg name="capture_ingest_ip" default="192.168.50.2"/>   <!-- Central ingest host for capture_uploader -->
+  <arg name="capture_ingest_port" default="8080"/>         <!-- Central ingest port (/api/v1/upload) -->
+
+  <!-- Fleet / logging -->
+  <arg name="sqlite" default="false"/>             <!-- Persist DDS traffic to SQLite via mattbot_dds -->
+
+  <arg name="package" default="mattbot_bringup"/>
 
   <include file="$(find mattbot_bringup)/launch/minimal.launch">
     <arg name="car" value="$(arg car)"/>

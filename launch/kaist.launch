@@ -1,29 +1,35 @@
 <!-- kaist.launch -->
 <!-- Tall-robot bringup for KAIST deployment. Same stack as tall.launch with site-fixed defaults. -->
+<!-- Override at launch, e.g. capture:=true audio:=true save_wakeword_audio:=true -->
 <launch>
 
-  <!-- KAIST configuration (edit these for the KAIST setup) -->
-  <arg name="tall" default="true"/>
-  <arg name="patrol" default="false"/>
-  <arg name="camera_type" default="astra_pro_plus"/>
-  <arg name="car" default="true"/>
-  <arg name="front_wheel_drive" default="true"/>
-  <arg name="sqlite" default="false"/>
-  <arg name="capture" default="false"/>
-  <arg name="audio" default="false"/>
-  <arg name="capture_spool_dir" default="/workspace/catkin_ws/data/capture_spool"/>
-  <arg name="capture_ingest_ip" default="192.168.50.2"/>
-  <arg name="capture_ingest_port" default="8080"/>
+  <!-- Robot / hardware (KAIST site defaults) -->
+  <arg name="tall" default="true"/>              <!-- Tall form factor: OSOD model, nav map, MCL tuning -->
+  <arg name="car" default="true"/>               <!-- Car platform at KAIST (no lidar_correction include here) -->
+  <arg name="front_wheel_drive" default="true"/> <!-- Car drivetrain layout passed to minimal.launch -->
+  <arg name="camera_type" default="astra_pro_plus"/>  <!-- Fixed camera for KAIST (astra_pro_plus.launch) -->
 
-  <!-- Send unknown-object images to the LLM for labeling (gemini_bridge) -->
-  <arg name="use_llm_for_images" default="false"/>
-
-  <!-- Planning radius from robot center (m); passed to navigator (~robot_clearance). -->
-  <arg name="robot_clearance" default="0.4"/>
-
-  <!-- Nominal trajectory speed (m/s) for path smoothing; read as /cruising_velocity by navigator. -->
-  <arg name="cruising_velocity" default="0.40"/>
+  <!-- Navigation -->
+  <arg name="patrol" default="false"/>           <!-- Enable patrol waypoint loop in navigator -->
+  <arg name="robot_clearance" default="0.4"/>    <!-- Planning radius from robot center (m); KAIST default -->
+  <arg name="cruising_velocity" default="0.40"/> <!-- Nominal path speed (m/s); published as /cruising_velocity -->
   <param name="cruising_velocity" value="$(arg cruising_velocity)"/>
+
+  <!-- Perception -->
+  <arg name="use_llm_for_images" default="false"/>  <!-- Send unknown-object crops to gemini_bridge for labeling -->
+
+  <!-- Data capture (images + optional wakeword audio upload) -->
+  <arg name="capture" default="false"/>            <!-- mattbot_capture: capture_node, uploader, auto_trigger -->
+  <arg name="capture_spool_dir" default="/workspace/catkin_ws/data/capture_spool"/>  <!-- Local spool (images + audio sessions) -->
+  <arg name="capture_ingest_ip" default="192.168.50.2"/>   <!-- Central ingest host for capture_uploader -->
+  <arg name="capture_ingest_port" default="8080"/>         <!-- Central ingest port (/api/v1/upload) -->
+
+  <!-- Audio (I2S mic, wakeword, Whisper, voice goals) -->
+  <arg name="audio" default="false"/>              <!-- Launch mattbot_record audio_with_speech_detection -->
+  <arg name="save_wakeword_audio" default="false"/>  <!-- Save post-wakeword WAVs to capture_spool_dir (needs ROBOT_ID; upload needs capture:=true) -->
+
+  <!-- Fleet / logging -->
+  <arg name="sqlite" default="false"/>             <!-- Persist DDS traffic to SQLite via mattbot_dds -->
 
   <arg name="package" default="mattbot_bringup"/>
 
@@ -67,7 +73,10 @@
   </include>
 
   <group if="$(arg audio)">
-    <include file="$(find mattbot_record)/launch/audio_with_speech_detection.launch"/>
+    <include file="$(find mattbot_record)/launch/audio_with_speech_detection.launch">
+      <arg name="save_wakeword_audio" value="$(arg save_wakeword_audio)"/>
+      <arg name="spool_dir" value="$(arg capture_spool_dir)"/>
+    </include>
   </group>
 
 </launch>
