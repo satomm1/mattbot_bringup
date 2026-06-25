@@ -11,7 +11,7 @@
   <arg name="sqlite" default="false"/>
   <arg name="capture" default="false"/>
   <arg name="audio" default="false"/>
-  <arg name="capture_spool_dir" default="/var/robot_capture/spool"/>
+  <arg name="capture_spool_dir" default="/workspace/catkin_ws/data/capture_spool"/>
   <arg name="capture_ingest_ip" default="192.168.50.2"/>
   <arg name="capture_ingest_port" default="8080"/>
 
