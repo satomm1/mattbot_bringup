@@ -19,7 +19,7 @@
   <arg name="use_llm_for_images" default="false"/>  <!-- Send unknown-object crops to gemini_bridge for labeling -->
 
   <!-- Data capture (images + optional wakeword audio upload) -->
-  <arg name="capture" default="false"/>            <!-- mattbot_capture: capture_node, uploader, auto_trigger -->
+  <arg name="capture" default="false"/>            <!-- mattbot_capture: capture_node, uploader, auto_trigger; capture:=true also enables camera IR -->
   <arg name="capture_spool_dir" default="/workspace/catkin_ws/data/capture_spool"/>  <!-- Local spool (images + audio sessions) -->
   <arg name="capture_ingest_ip" default="192.168.50.2"/>   <!-- Central ingest host for capture_uploader -->
   <arg name="capture_ingest_port" default="8080"/>         <!-- Central ingest port (/api/v1/upload) -->
@@ -46,7 +46,9 @@
     <arg name="tall" value="$(arg tall)"/>
   </include>
 
-  <include file="$(find astra_camera)/launch/astra_pro_plus.launch"/>
+  <include file="$(find astra_camera)/launch/astra_pro_plus.launch">
+    <arg name="enable_ir" value="$(arg capture)"/>
+  </include>
 
   <include file="$(find mattbot_image_detection)/launch/detect_updated_osod.launch">
     <arg name="tall" value="$(arg tall)"/>
