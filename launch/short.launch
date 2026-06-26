@@ -12,6 +12,7 @@
   <arg name="enable_depth_occupancy_grid" default="false"/>  <!-- Camera depth occupancy grid in occupancy_grid_mapper (CPU-heavy) -->
   <arg name="enable_object_blockout" default="true"/>       <!-- Block /object_map cells when cones are confirmed -->
   <arg name="max_object_blockout_width" default="0.5"/>    <!-- Max side length (m) of each object blockout on /object_map -->
+  <arg name="object_blockout_ttl_sec" default="30.0"/>     <!-- 0 = no expiry; remove expired blockouts only in IDLE -->
   <arg name="social" default="false"/>           <!-- Social A* planning in navigator -->
   <arg name="multi_agent_nav" default="false"/>  <!-- Multi-agent navigator + DDS path handoff (vs standard short nav) -->
   <arg name="robot_clearance" default="0.3"/>    <!-- Planning radius from robot center (m); ~robot_clearance -->
@@ -20,6 +21,7 @@
   <param name="enable_depth_occupancy_grid" value="$(arg enable_depth_occupancy_grid)"/>
   <param name="enable_object_blockout" value="$(arg enable_object_blockout)"/>
   <param name="max_object_blockout_width" value="$(arg max_object_blockout_width)"/>
+  <param name="object_blockout_ttl_sec" value="$(arg object_blockout_ttl_sec)"/>
 
   <!-- Perception -->
   <arg name="use_llm_for_images" default="false"/>  <!-- Send unknown-object crops to gemini_bridge for labeling -->

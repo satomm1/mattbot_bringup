@@ -14,12 +14,14 @@
   <arg name="enable_depth_occupancy_grid" default="false"/>  <!-- Camera depth occupancy grid in occupancy_grid_mapper (CPU-heavy) -->
   <arg name="enable_object_blockout" default="true"/>       <!-- Block /object_map cells when cones are confirmed -->
   <arg name="max_object_blockout_width" default="0.5"/>    <!-- Max side length (m) of each object blockout on /object_map -->
+  <arg name="object_blockout_ttl_sec" default="30.0"/>     <!-- 0 = no expiry; remove expired blockouts only in IDLE -->
   <arg name="robot_clearance" default="0.4"/>    <!-- Planning radius from robot center (m); KAIST default -->
   <arg name="cruising_velocity" default="0.40"/> <!-- Nominal path speed (m/s); published as /cruising_velocity -->
   <param name="cruising_velocity" value="$(arg cruising_velocity)"/>
   <param name="enable_depth_occupancy_grid" value="$(arg enable_depth_occupancy_grid)"/>
   <param name="enable_object_blockout" value="$(arg enable_object_blockout)"/>
   <param name="max_object_blockout_width" value="$(arg max_object_blockout_width)"/>
+  <param name="object_blockout_ttl_sec" value="$(arg object_blockout_ttl_sec)"/>
 
   <!-- Perception -->
   <arg name="use_llm_for_images" default="false"/>  <!-- Send unknown-object crops to gemini_bridge for labeling -->
