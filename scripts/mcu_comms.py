@@ -17,6 +17,7 @@ from std_msgs.msg import Float32, UInt8
 from mattbot_bringup.msg import AirQuality
 
 BAUD_RATE = 1000000 # Baud rate for SPI
+SPI_SYNC = 55  # Sync byte prepended to every 16-byte MCU payload
 
 """
 Communicates with the MCU to send and receive data via SPI.
@@ -84,6 +85,32 @@ class MCU_Comms:
         # Subscribe to the cmd_vel topic to receive velocity commands
         rospy.Subscriber("/cmd_vel", Twist, self.vel_callback)
 
+    def _spi_exchange(self, payload):
+        """
+        One CS assertion: sync byte (55) plus 16-byte payload.
+        Returns 17 MISO bytes; use _mcu_msg() to get the 16-byte MCU reply.
+        """
+        return self.spi.xfer([SPI_SYNC] + payload + [0x00])
+
+    @staticmethod
+    def _mcu_msg(rcvd):
+        """
+        Skip rcvd[0] (MISO during sync clock); return the 16-byte MCU message.
+        """
+        # print("Received from MCU:", rcvd)
+        return rcvd[2:18]
+
+    def _recover_mcu(self, pos_x=0, pos_y=0, pos_theta=0):
+        """
+        Stop motion, tell MCU to shut down, wait for its watchdog, then re-handshake.
+        """
+        self.lin_cmd = 0.0
+        self.ang_cmd = 0.0
+        shutdown_message = [90, 0b11110000] + [0] * 14
+        for _ in range(2):
+            self._spi_exchange(shutdown_message)
+        time.sleep(1.1)
+        self.mcu_startup(pos_x=pos_x, pos_y=pos_y, pos_theta=pos_theta)
 
     def mcu_startup(self, pos_x=None, pos_y=None, pos_theta=None):
         """
@@ -97,14 +124,14 @@ class MCU_Comms:
         bringup_confirmed = False
         while not bringup_confirmed:
             bringup_message = [90, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            self.spi.writebytes([55])
-            rcvd = self.spi.xfer(bringup_message)
-            # print(rcvd)
+            rcvd = self._spi_exchange(bringup_message)
+            msg = self._mcu_msg(rcvd)
+            # print(msg)
 
             # Check if the MCU has confirmed bringup
-            if rcvd[0] == 0 and rcvd[1] == 255 and rcvd[2] == 0:
+            if msg[0] == 0 and msg[1] == 255 and msg[2] == 0:
                 bringup_confirmed = True  # MattBot is active
-                self.robot_id = rcvd[3]  # Get and store the robot ID
+                self.robot_id = msg[3]  # Get and store the robot ID
                 print("Robot ID: " + str(self.robot_id))
             time.sleep(0.1)
 
@@ -123,9 +150,7 @@ class MCU_Comms:
                                     0, 0]
 
         # Send the confirmation message to the MCU
-        self.spi.writebytes([55])
-        rcvd = self.spi.xfer2(confirmation_message)
-        # print(rcvd)
+        self._spi_exchange(confirmation_message)
 
     def vel_callback(self, data):
         """
@@ -134,31 +159,7 @@ class MCU_Comms:
         self.lin_cmd = data.linear.x
         self.ang_cmd = data.angular.z
 
-    def send_vel_command(self):
-        """
-        This is just used for testing communication with the MCU
-        """
-        n = 0
-        while n < 20:
-            vel_msg = [45,0x3f,0x00,0x00,0x00,0x00,0x00,0x00,0x00,10,11,12,13,14,15,16]
-            rcvd = self.spi.xfer(vel_msg)
-            print(rcvd)
-            n = n + 1
-            time.sleep(0.01)
-        time.sleep(2.5)
-        end_msg = [90, 0b11110000,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        rcvd = self.spi.xfer(end_msg)
-        print(rcvd)
 
-    def resync(self):
-        """
-        Used to resync when we misalign with MCU
-        """
-        for ii in range(20):
-            self.spi.writebytes(66)
-        self.spi.writebytes(77)
-        self.spi.writebytes(55)
-       
 
     def run(self):
         """
@@ -166,8 +167,8 @@ class MCU_Comms:
         """
         self.mcu_startup()
         
-        # Execute loop at 300 Hz: every topic published at 300/6=50 Hz
-        rate = rospy.Rate(200)
+        # Execute loop at 100 Hz: every topic published at 100/6=16.67 Hz
+        rate = rospy.Rate(100)
 
         # Variables to save throughout the loop
         acc_x = 0
@@ -194,18 +195,17 @@ class MCU_Comms:
                        lin_vel_bytes[3],lin_vel_bytes[2],lin_vel_bytes[1],lin_vel_bytes[0],  # Linear velocity
                        ang_vel_bytes[3],ang_vel_bytes[2],ang_vel_bytes[1],ang_vel_bytes[0],  # Angular velocity
                        0,0,0,0,0,0,0]  # Padding
-            self.spi.writebytes([55])
-            time.sleep(0.000001)
-            rcvd = self.spi.xfer(vel_msg)
-            # print(rcvd)
+            rcvd = self._spi_exchange(vel_msg)
+            msg = self._mcu_msg(rcvd)
+            # print(msg)
 
             # Now do something with the received data
-            if rcvd[0] == 7: # Received dead reckoning data
+            if msg[0] == 7: # Received dead reckoning data
                 num_unknown = 0  # Reset unknown message count
 
                 # Extract the dead reckoning data (converts from bytes to float)
-                V_dr = bytes_to_float(list(reversed(rcvd[1:5])))
-                w_dr = bytes_to_float(list(reversed(rcvd[5:9])))
+                V_dr = bytes_to_float(list(reversed(msg[1:5])))
+                w_dr = bytes_to_float(list(reversed(msg[5:9])))
 
                 # Load the data into an Odometry Message
                 odom = Odometry()
@@ -238,13 +238,13 @@ class MCU_Comms:
 
                 sensor_sequence = sensor_sequence + 1
 
-            elif rcvd[0] == 8:  # Recieved position data
+            elif msg[0] == 8:  # Recieved position data
                 num_unknown = 0  # Reset unknown message count
 
                 # Extract the position data (converts from bytes to float)
-                pos_x = bytes_to_float(list(reversed(rcvd[1:5])))
-                pos_y = bytes_to_float(list(reversed(rcvd[5:9])))
-                pos_theta = bytes_to_float(list(reversed(rcvd[9:13])))
+                pos_x = bytes_to_float(list(reversed(msg[1:5])))
+                pos_y = bytes_to_float(list(reversed(msg[5:9])))
+                pos_theta = bytes_to_float(list(reversed(msg[9:13])))
 
                 # Load the data into a TF Message
                 tf_msg = TFMessage()
@@ -270,12 +270,12 @@ class MCU_Comms:
 
                 self.tf_pub.publish(tf_msg)  # actually publish the data
 
-            elif rcvd[0] == 9: # Received IMU data
+            elif msg[0] == 9: # Received IMU data
                 num_unknown = 0  # Reset unknown message count
 
                 # Get roll/pitch in degrees
-                roll = bytes_to_float(list(reversed(rcvd[1:5])))
-                pitch = bytes_to_float(list(reversed(rcvd[5:9])))
+                roll = bytes_to_float(list(reversed(msg[1:5])))
+                pitch = bytes_to_float(list(reversed(msg[5:9])))
 
                 roll_rad = roll * (3.141592653589793 / 180.0)  # Convert to radians
                 pitch_rad = pitch * (3.141592653589793 / 180.0)
@@ -305,17 +305,17 @@ class MCU_Comms:
                 
                 # self.imu_pub.publish(imu)  # actually publish the data                
 
-            elif rcvd[0] == 15:  # Received IMU Orientation XY data
+            elif msg[0] == 15:  # Received IMU Orientation XY data
                 num_unknown = 0  # Reset unknown message count
 
-                qx = bytes_to_float(list(reversed(rcvd[1:5])))
-                qy = bytes_to_float(list(reversed(rcvd[5:9])))
+                qx = bytes_to_float(list(reversed(msg[1:5])))
+                qy = bytes_to_float(list(reversed(msg[5:9])))
 
-            elif rcvd[0] == 16:  # Received IMU Orientation ZW data
+            elif msg[0] == 16:  # Received IMU Orientation ZW data
                 num_unknown = 0  # Reset unknown message count
 
-                qz = bytes_to_float(list(reversed(rcvd[1:5])))
-                qw = bytes_to_float(list(reversed(rcvd[5:9])))
+                qz = bytes_to_float(list(reversed(msg[1:5])))
+                qw = bytes_to_float(list(reversed(msg[5:9])))
 
                 imu = Imu()
                 # provide header information
@@ -345,18 +345,18 @@ class MCU_Comms:
                 
                 self.imu_pub.publish(imu)  # actually publish the data
                 
-            elif rcvd[0] == 10: # Received reflective sensor data
+            elif msg[0] == 10: # Received reflective sensor data
                 num_unknown = 0  # Reset unknown message count
 
-                right_sensor = bytes_to_unsigned_int(rcvd[1], rcvd[2])
-                front_sensor = bytes_to_unsigned_int(rcvd[3], rcvd[4])
-                left_sensor = bytes_to_unsigned_int(rcvd[5], rcvd[6])
+                right_sensor = bytes_to_unsigned_int(msg[1], msg[2])
+                front_sensor = bytes_to_unsigned_int(msg[3], msg[4])
+                left_sensor = bytes_to_unsigned_int(msg[5], msg[6])
                 
                 # Actually publish the data
                 self.right_sensor_pub.publish(float(right_sensor))
                 self.front_sensor_pub.publish(float(front_sensor))
                 self.left_sensor_pub.publish(float(left_sensor))
-                button_status = rcvd[7]
+                button_status = msg[7]
                 # Bits of button status indicates if each button is pressed
                 button1_pressed = (button_status & 0b00000001) == 0b00000001
                 button2_pressed = (button_status & 0b00000010) == 0b00000010
@@ -383,26 +383,26 @@ class MCU_Comms:
                         print("Button 3 pressed")
                     else:
                         print("Button 3 released")
-            elif rcvd[0] == 6: # Received temperature/humidity data
+            elif msg[0] == 6: # Received temperature/humidity data
                 num_unknown = 0  # Reset unknown message count
 
                 # Only publish approximately once a second
                 aqi_publish_count += 1
                 if aqi_publish_count >= 33:
-                    temp = bytes_to_float(list(reversed(rcvd[1:5])))
-                    humidity = bytes_to_float(list(reversed(rcvd[5:9])))
+                    temp = bytes_to_float(list(reversed(msg[1:5])))
+                    humidity = bytes_to_float(list(reversed(msg[5:9])))
 
                     air_quality_msg.header.stamp = rospy.Time.now()
                     air_quality_msg.temperature = temp
                     air_quality_msg.relative_humidity = humidity
-            elif rcvd[0] == 5: # Received air quality data
+            elif msg[0] == 5: # Received air quality data
                 num_unknown = 0  # Reset unknown message count
 
                 if aqi_publish_count >= 33:
                     aqi_publish_count = 0
 
-                    voc = struct.unpack('i', bytes(list(reversed(rcvd[1:5]))))[0]
-                    nox = struct.unpack('i', bytes(list(reversed(rcvd[5:9]))))[0]
+                    voc = struct.unpack('i', bytes(list(reversed(msg[1:5]))))[0]
+                    nox = struct.unpack('i', bytes(list(reversed(msg[5:9]))))[0]
 
                     air_quality_msg.voc_index = float(voc)
                     air_quality_msg.nox_index = float(nox)
@@ -413,7 +413,7 @@ class MCU_Comms:
 
                 if num_unknown >= 20:
                     print("Resetting")
-                    self.mcu_startup(pos_x=pos_x, pos_y=pos_y, pos_theta=pos_theta)
+                    self._recover_mcu(pos_x=pos_x, pos_y=pos_y, pos_theta=pos_theta)
                     num_unknown = 0                
             rate.sleep()
 
@@ -422,9 +422,8 @@ class MCU_Comms:
         This function is called when the node is shutdown
         """
         # Send shutdown message to MCU
-        self.spi.writebytes([55])
         shutdown_message = [90, 0b11110000,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        rcvd = self.spi.xfer(shutdown_message)
+        self._spi_exchange(shutdown_message)
 
         self.spi.close()
 
