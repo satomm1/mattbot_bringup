@@ -132,7 +132,7 @@ class MCU_Comms:
             if msg[0] == 0 and msg[1] == 255 and msg[2] == 0:
                 bringup_confirmed = True  # MattBot is active
                 self.robot_id = msg[3]  # Get and store the robot ID
-                print("Robot ID: " + str(self.robot_id))
+                rospy.loginfo("[MCU Comms] Robot ID: " + str(self.robot_id))
             time.sleep(0.1)
 
         # Send confirmation message to MCU
@@ -366,23 +366,23 @@ class MCU_Comms:
                     self.button_status[0] = button1_pressed
                     self.button_pub.publish(button_status)
                     if button1_pressed:
-                        print("Button 1 pressed")
+                        rospy.loginfo("[MCU Comms] Button 1 pressed")
                     else:
-                        print("Button 1 released")
+                        rospy.loginfo("[MCU Comms] Button 1 released")
                 if (button2_pressed != self.button_status[1]):
                     self.button_status[1] = button2_pressed
                     self.button_pub.publish(button_status)
                     if button2_pressed:
-                        print("Button 2 pressed")
+                        rospy.loginfo("[MCU Comms] Button 2 pressed")
                     else:
-                        print("Button 2 released")
+                        rospy.loginfo("[MCU Comms] Button 2 released")
                 if (button3_pressed != self.button_status[2]):
                     self.button_status[2] = button3_pressed
                     self.button_pub.publish(button_status)
                     if button3_pressed:
-                        print("Button 3 pressed")
+                        rospy.loginfo("[MCU Comms] Button 3 pressed")
                     else:
-                        print("Button 3 released")
+                        rospy.loginfo("[MCU Comms] Button 3 released")
             elif msg[0] == 6: # Received temperature/humidity data
                 num_unknown = 0  # Reset unknown message count
 
@@ -412,7 +412,7 @@ class MCU_Comms:
                 # print(rcvd)
 
                 if num_unknown >= 20:
-                    print("Resetting")
+                    rospy.loginfo("[MCU Comms] Resetting")
                     self._recover_mcu(pos_x=pos_x, pos_y=pos_y, pos_theta=pos_theta)
                     num_unknown = 0                
             rate.sleep()
@@ -450,7 +450,7 @@ def bytes_to_unsigned_int(high_byte, low_byte):
     return (high_byte << 8) | low_byte
 
 def mcu_shutdown():
-    print("Shutting down MCU communication")
+    rospy.loginfo("[MCU Comms] Shutting down MCU communication")
     comms.shutdown()
 
 if __name__ == "__main__":
