@@ -15,7 +15,7 @@
   <arg name="object_blockout_ttl_sec" default="30.0"/>     <!-- 0 = no expiry; remove expired blockouts only in IDLE -->
   <arg name="social" default="false"/>           <!-- Social A* planning in navigator -->
   <arg name="multi_agent_nav" default="false"/>  <!-- Multi-agent navigator + DDS path handoff (vs standard short nav) -->
-  <arg name="robot_clearance" default="0.3"/>    <!-- Planning radius from robot center (m); ~robot_clearance -->
+  <arg name="robot_clearance" default="0.4"/>    <!-- Planning radius from robot center (m); ~robot_clearance -->
   <arg name="cruising_velocity" default="0.40"/> <!-- Nominal path speed (m/s); published as /cruising_velocity -->
   <arg name="max_plan_time_sec" default="15.0"/> <!-- Max wall-clock time (s) for A* path planning -->
   <param name="cruising_velocity" value="$(arg cruising_velocity)"/>
