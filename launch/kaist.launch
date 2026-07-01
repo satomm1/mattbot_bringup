@@ -86,6 +86,7 @@
     <arg name="ingest_port" value="$(arg capture_ingest_port)"/>
     <arg name="pose_spool_dir" value="$(arg pose_spool_dir)"/>
     <arg name="detection_spool_dir" value="$(arg detection_spool_dir)"/>
+    <arg name="tall" value="$(arg tall)"/>
   </include>
 
   <group if="$(arg audio)">
