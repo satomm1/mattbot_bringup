@@ -343,7 +343,7 @@ class MCU_Comms:
                 imu.orientation_covariance[4] = 0.0001
                 imu.orientation_covariance[8] = 0.0001
                 
-                self.imu_pub.publish(imu)  # actually publish the data
+                # self.imu_pub.publish(imu)  # actually publish the data
                 
             elif msg[0] == 10: # Received reflective sensor data
                 num_unknown = 0  # Reset unknown message count
