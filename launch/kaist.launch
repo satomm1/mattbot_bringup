@@ -5,8 +5,8 @@
 
   <!-- Robot / hardware (KAIST site defaults) -->
   <arg name="tall" default="true"/>              <!-- Tall form factor: OSOD model, nav map, MCL tuning -->
-  <arg name="car" default="true"/>               <!-- Car platform at KAIST (no lidar_correction include here) -->
-  <arg name="front_wheel_drive" default="true"/> <!-- Car drivetrain layout passed to minimal.launch -->
+  <arg name="car" default="false"/>               <!-- Car platform at KAIST (no lidar_correction include here) -->
+  <arg name="front_wheel_drive" default="false"/> <!-- Car drivetrain layout passed to minimal.launch -->
   <arg name="camera_type" default="astra_pro_plus"/>  <!-- Fixed camera for KAIST (astra_pro_plus.launch) -->
 
   <!-- Navigation -->
