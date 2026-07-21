@@ -12,7 +12,7 @@
   <!-- Navigation -->
   <arg name="patrol" default="false"/>           <!-- Enable patrol waypoint loop in navigator -->
   <arg name="enable_depth_occupancy_grid" default="false"/>  <!-- Camera depth occupancy grid in occupancy_grid_mapper (CPU-heavy) -->
-  <arg name="enable_object_blockout" default="true"/>       <!-- Block /object_map cells when cones are confirmed -->
+  <arg name="enable_object_blockout" default="false"/>       <!-- Block /object_map cells when cones are confirmed -->
   <arg name="max_object_blockout_width" default="0.5"/>    <!-- Max side length (m) of each object blockout on /object_map -->
   <arg name="object_blockout_ttl_sec" default="30.0"/>     <!-- 0 = no expiry; remove expired blockouts only in IDLE -->
   <arg name="robot_clearance" default="0.4"/>    <!-- Planning radius from robot center (m); KAIST default -->
