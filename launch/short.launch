@@ -122,6 +122,7 @@
   <!-- Launch the DDS (wireless communications) node -->
   <include file="$(find mattbot_dds)/launch/dds.launch">
     <arg name="sqlite" value="$(arg sqlite)"/>
+    <arg name="tall" value="$(arg tall)"/>
   </include>
 
   <include file="$(find mattbot_capture)/launch/capture.launch">
