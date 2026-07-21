@@ -97,6 +97,7 @@
     <arg name="continuous_capture" value="$(arg continuous_capture)"/>
     <arg name="continuous_sample_hz" value="$(arg continuous_sample_hz)"/>
     <arg name="session_chunk_seconds" value="$(arg session_chunk_seconds)"/>
+    <arg name="log_save_timing" value="$(arg log_save_timing)"/>
     <arg name="moving_sample_hz" value="$(arg moving_sample_hz)"/>
     <arg name="static_sample_hz" value="$(arg static_sample_hz)"/>
   </include>
