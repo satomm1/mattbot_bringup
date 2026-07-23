@@ -36,8 +36,8 @@
   <arg name="detection_spool_dir" default="/workspace/catkin_ws/data/detection_spool"/>  <!-- Local spool for detection snapshots -->
   <!-- Continuous capture: after /localized, record indefinitely; chunk every session_chunk_seconds -->
   <arg name="continuous_capture" default="true"/>
-  <arg name="continuous_sample_hz" default="10.0"/>
-  <arg name="session_chunk_seconds" default="20"/>
+  <arg name="continuous_sample_hz" default="4.0"/>
+  <arg name="session_chunk_seconds" default="5"/>
   <arg name="log_save_timing" default="false"/>
   <arg name="moving_sample_hz" default="10.0"/>
   <arg name="static_sample_hz" default="10"/>
