@@ -30,7 +30,7 @@
   <!-- Data capture (images + optional wakeword audio upload) -->
   <arg name="capture" default="true"/>            <!-- mattbot_capture: capture_node, uploader, auto_trigger; capture:=true also enables camera IR -->
   <arg name="capture_spool_dir" default="/workspace/catkin_ws/data/capture_spool"/>  <!-- Local spool (images + audio sessions) -->
-  <arg name="capture_ingest_ip" default="192.168.68.51"/>   <!-- Central ingest host for capture_uploader -->
+  <arg name="capture_ingest_ip" default="192.168.68.52"/>   <!-- Central ingest host for capture_uploader -->
   <arg name="capture_ingest_port" default="8080"/>         <!-- Central ingest port (/api/v1/upload) -->
   <arg name="pose_spool_dir" default="/workspace/catkin_ws/data/pose_spool"/>  <!-- Local spool for pose chunks -->
   <arg name="detection_spool_dir" default="/workspace/catkin_ws/data/detection_spool"/>  <!-- Local spool for detection snapshots -->
