@@ -13,7 +13,7 @@ from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from tf2_msgs.msg import TFMessage
 from tf.transformations import quaternion_from_euler
-from std_msgs.msg import Float32, UInt8
+from std_msgs.msg import Bool, Float32, UInt8
 from mattbot_bringup.msg import AirQuality
 
 BAUD_RATE = 1000000 # Baud rate for SPI
@@ -78,12 +78,22 @@ class MCU_Comms:
         # Publisher for button status
         self.button_pub = rospy.Publisher('/button_status', UInt8, queue_size=10)
 
+        # Latched MCU connection state for DDS heartbeat bridging
+        self.mcu_connected_pub = rospy.Publisher(
+            "/mcu_connected", Bool, queue_size=1, latch=True
+        )
+        self._set_mcu_connected(False)
+
         # Initialize linear/angular velocity commands
         self.lin_cmd = 0.0
         self.ang_cmd = 0.0
 
         # Subscribe to the cmd_vel topic to receive velocity commands
         rospy.Subscriber("/cmd_vel", Twist, self.vel_callback)
+
+    def _set_mcu_connected(self, connected):
+        """Publish latched MCU handshake / SPI-loop connection state."""
+        self.mcu_connected_pub.publish(Bool(data=connected))
 
     def _spi_exchange(self, payload):
         """
@@ -104,6 +114,7 @@ class MCU_Comms:
         """
         Stop motion, tell MCU to shut down, wait for its watchdog, then re-handshake.
         """
+        self._set_mcu_connected(False)
         self.lin_cmd = 0.0
         self.ang_cmd = 0.0
         shutdown_message = [90, 0b11110000] + [0] * 14
@@ -116,6 +127,7 @@ class MCU_Comms:
         """
         This function is used to bring up the MCU online and confirm communication
         """
+        self._set_mcu_connected(False)
 
         # Bringup message to MCU
         bringup_message = [90, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -151,6 +163,7 @@ class MCU_Comms:
 
         # Send the confirmation message to the MCU
         self._spi_exchange(confirmation_message)
+        self._set_mcu_connected(True)
 
     def vel_callback(self, data):
         """
@@ -421,6 +434,7 @@ class MCU_Comms:
         """
         This function is called when the node is shutdown
         """
+        self._set_mcu_connected(False)
         # Send shutdown message to MCU
         shutdown_message = [90, 0b11110000,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
         self._spi_exchange(shutdown_message)
