@@ -8,7 +8,7 @@
   <arg name="camera_type" default="$(env CAMERA_TYPE)"/>  <!-- astra_pro_plus or astra (depth camera launch) -->
 
   <!-- Navigation -->
-  <arg name="patrol" default="false"/>           <!-- Enable patrol (multi_agent nav only when multi_agent_nav:=true) -->
+  <arg name="patrol" default="false"/>           <!-- Enable patrol -->
   <arg name="enable_depth_occupancy_grid" default="false"/>  <!-- Camera depth occupancy grid in occupancy_grid_mapper (CPU-heavy) -->
   <arg name="enable_object_blockout" default="true"/>       <!-- Block /object_map cells when cones are confirmed -->
   <arg name="max_object_blockout_width" default="0.5"/>    <!-- Max side length (m) of each object blockout on /object_map -->
@@ -106,6 +106,7 @@
   <group unless="$(arg multi_agent_nav)">
     <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_short.launch">
       <arg name="social" value="$(arg social)"/>
+      <arg name="patrol" value="$(arg patrol)"/>
       <arg name="robot_clearance" value="$(arg robot_clearance)"/>
       <arg name="cruising_velocity" value="$(arg cruising_velocity)"/>
       <arg name="max_plan_time_sec" value="$(arg max_plan_time_sec)"/>
