@@ -15,7 +15,7 @@
   <arg name="enable_object_blockout" default="false"/>       <!-- Block /object_map cells when cones are confirmed -->
   <arg name="max_object_blockout_width" default="0.5"/>    <!-- Max side length (m) of each object blockout on /object_map -->
   <arg name="object_blockout_ttl_sec" default="30.0"/>     <!-- 0 = no expiry; remove expired blockouts only in IDLE -->
-  <arg name="robot_clearance" default="0.4"/>    <!-- Planning radius from robot center (m); KAIST default -->
+  <arg name="robot_clearance" default="0.35"/>    <!-- Planning radius from robot center (m); KAIST default -->
   <arg name="cruising_velocity" default="0.40"/> <!-- Nominal path speed (m/s); published as /cruising_velocity -->
   <arg name="max_plan_time_sec" default="15.0"/> <!-- Max wall-clock time (s) for A* path planning -->
   <param name="cruising_velocity" value="$(arg cruising_velocity)"/>
