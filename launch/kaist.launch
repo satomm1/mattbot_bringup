@@ -62,6 +62,9 @@
 
   <include file="$(find mattbot_mcl)/launch/localization_quality.launch">
     <arg name="tall" value="$(arg tall)"/>
+    <!-- Looser pose-jump gates for KAIST (defaults are 0.5m / 0.5rad) -->
+    <arg name="max_pose_jump_m" value="0.75"/>
+    <arg name="max_pose_jump_theta" value="0.7"/>
   </include>
 
   <include file="$(find astra_camera)/launch/astra_pro_plus.launch">
