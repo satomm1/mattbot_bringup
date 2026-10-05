@@ -38,6 +38,12 @@
   <!-- Fleet / logging -->
   <arg name="sqlite" default="false"/>             <!-- Persist DDS traffic to SQLite via mattbot_dds -->
 
+  <!-- Experimental: object ledger + blockage belief (mattbot_dds; off by default) -->
+  <arg name="ledger" default="false"/>             <!-- observation_ledger: shared ledger of confirmed objects over DDS (/ledger) -->
+  <arg name="object_belief" default="$(arg ledger)"/>  <!-- object_belief_map: /object_beliefs + /object_belief_map (needs ledger) -->
+  <arg name="belief_hold_s" default="60.0"/>       <!-- t1: full belief after an object's latest observation (s) -->
+  <arg name="belief_decay_s" default="120.0"/>     <!-- t2: then linear decay to unknown (s) -->
+
   <arg name="package" default="mattbot_bringup"/>
 
   <include file="$(find mattbot_bringup)/launch/minimal.launch">
@@ -124,6 +130,10 @@
   <include file="$(find mattbot_dds)/launch/dds.launch">
     <arg name="sqlite" value="$(arg sqlite)"/>
     <arg name="tall" value="$(arg tall)"/>
+    <arg name="enable_ledger" value="$(arg ledger)"/>
+    <arg name="enable_object_belief" value="$(arg object_belief)"/>
+    <arg name="belief_hold_s" value="$(arg belief_hold_s)"/>
+    <arg name="belief_decay_s" value="$(arg belief_decay_s)"/>
   </include>
 
   <include file="$(find mattbot_capture)/launch/capture.launch">

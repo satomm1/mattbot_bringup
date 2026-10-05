@@ -6,6 +6,10 @@
   <arg name="car" default="false"/>
   <arg name="sqlite" default="false"/>
   <arg name="social" default="false"/>
+  <arg name="ledger" default="false"/>
+  <arg name="object_belief" default="$(arg ledger)"/>
+  <arg name="belief_hold_s" default="60.0"/>
+  <arg name="belief_decay_s" default="120.0"/>
 
   <include file="$(find mattbot_bringup)/launch/short.launch">
     <arg name="multi_agent_nav" value="true"/>
@@ -15,5 +19,9 @@
     <arg name="car" value="$(arg car)"/>
     <arg name="sqlite" value="$(arg sqlite)"/>
     <arg name="social" value="$(arg social)"/>
+    <arg name="ledger" value="$(arg ledger)"/>
+    <arg name="object_belief" value="$(arg object_belief)"/>
+    <arg name="belief_hold_s" value="$(arg belief_hold_s)"/>
+    <arg name="belief_decay_s" value="$(arg belief_decay_s)"/>
   </include>
 </launch>
