@@ -46,6 +46,12 @@
   <arg name="object_belief" default="$(arg ledger)"/>  <!-- object_belief_map: /object_beliefs + /object_belief_map (needs ledger) -->
   <arg name="belief_hold_s" default="60.0"/>       <!-- t1: full belief after an object's latest observation (s) -->
   <arg name="belief_decay_s" default="120.0"/>     <!-- t2: then linear decay to unknown (s) -->
+  <arg name="observe" default="false"/>            <!-- Stop on the path to check objects with belief <= observe_check_below_belief (needs ledger; standard navigator only) -->
+  <arg name="observe_dwell_s" default="4.0"/>      <!-- Time to hold still facing each object (s) -->
+  <arg name="observe_check_below_belief" default="0.5"/>
+  <arg name="observe_evaluate" default="$(arg observe)"/>  <!-- observation_evaluator: decide present / absent and update the ledger -->
+  <arg name="observe_use_depth" default="true"/>   <!-- Also require the depth camera to agree before declaring an object gone -->
+  <arg name="observe_min_absent_frames" default="8"/>  <!-- Clear frames needed in one window to declare an object gone -->
 
   <arg name="package" default="mattbot_bringup"/>
 
@@ -108,6 +114,9 @@
   <include file="$(find mattbot_image_detection)/launch/detect_updated_osod.launch">
     <arg name="tall" default="$(arg tall)"/>
     <arg name="use_llm_for_images" value="$(arg use_llm_for_images)"/>
+    <arg name="observe_evaluate" value="$(arg observe_evaluate)"/>
+    <arg name="observe_use_depth" value="$(arg observe_use_depth)"/>
+    <arg name="observe_min_absent_frames" value="$(arg observe_min_absent_frames)"/>
   </include> 
 
   <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_tall.launch">
@@ -117,6 +126,9 @@
     <arg name="robot_clearance" value="$(arg robot_clearance)"/>
     <arg name="cruising_velocity" value="$(arg cruising_velocity)"/>
     <arg name="max_plan_time_sec" value="$(arg max_plan_time_sec)"/>
+    <arg name="observe" value="$(arg observe)"/>
+    <arg name="observe_dwell_s" value="$(arg observe_dwell_s)"/>
+    <arg name="observe_check_below_belief" value="$(arg observe_check_below_belief)"/>
   </include>
 
   <include file="$(find mattbot_dds)/launch/dds.launch">
