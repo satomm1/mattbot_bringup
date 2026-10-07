@@ -52,6 +52,14 @@
   <arg name="observe_evaluate" default="$(arg observe)"/>  <!-- observation_evaluator: decide present / absent and update the ledger -->
   <arg name="observe_use_depth" default="true"/>   <!-- Also require the depth camera to agree before declaring an object gone -->
   <arg name="observe_min_absent_frames" default="8"/>  <!-- Clear frames needed in one window to declare an object gone -->
+  <arg name="observe_importance" default="false"/>  <!-- observation_planner: value objects by obstacle importance I_o (roadmap of /map; PNG in ~/.ros/mattbot_roadmap) -->
+  <arg name="observe_landmarks_file" default=""/>  <!-- YAML name: [x, y] (local map frame) trip endpoints for I_o; empty = random roadmap nodes -->
+  <arg name="observe_detour" default="false"/>  <!-- Detour off the path to re-check objects no on-path stop can see, when its value of information V = N p_gone I_o beats its cost (needs ledger + observe; turns on importance) -->
+  <arg name="observe_max_detour_m" default="15.0"/>  <!-- Ignore objects needing more extra driving than this (m) -->
+  <arg name="observe_detour_n_trips" default="5"/>  <!-- N: fleet trips that keep avoiding an object until someone re-checks it -->
+  <arg name="observe_detour_margin_m" default="0.0"/>  <!-- Detour only if V - C exceeds this (m) -->
+  <arg name="ledger_blockout" default="$(arg observe_detour)"/>  <!-- occupancy_grid_mapper: plan around every ledger object until it is removed -->
+  <param name="enable_ledger_blockout" value="$(arg ledger_blockout)"/>
 
   <arg name="package" default="mattbot_bringup"/>
 
@@ -129,6 +137,12 @@
     <arg name="observe" value="$(arg observe)"/>
     <arg name="observe_dwell_s" value="$(arg observe_dwell_s)"/>
     <arg name="observe_check_below_belief" value="$(arg observe_check_below_belief)"/>
+    <arg name="observe_importance" value="$(arg observe_importance)"/>
+    <arg name="observe_landmarks_file" value="$(arg observe_landmarks_file)"/>
+    <arg name="observe_detour" value="$(arg observe_detour)"/>
+    <arg name="observe_max_detour_m" value="$(arg observe_max_detour_m)"/>
+    <arg name="observe_detour_n_trips" value="$(arg observe_detour_n_trips)"/>
+    <arg name="observe_detour_margin_m" value="$(arg observe_detour_margin_m)"/>
   </include>
 
   <include file="$(find mattbot_dds)/launch/dds.launch">
