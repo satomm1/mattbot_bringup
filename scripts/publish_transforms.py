@@ -70,4 +70,7 @@ class TransformPublisher:
 if __name__ == "__main__":
 
     transform_publisher = TransformPublisher()
-    transform_publisher.run()
+    try:
+        transform_publisher.run()
+    except rospy.ROSInterruptException:
+        pass  # shutdown while sleeping (with simulated time the clock may stop first)
