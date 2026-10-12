@@ -30,7 +30,7 @@ class GetKnownPoints:
             except rospy.ROSException as e:
                 rospy.logerr(f"Error getting robot pose: {e}")
 
-        if len(self.known_points) >= 3:
+        if len(self.known_points) >= 4:
 
             # Check that points are numbered 1, 2, 3, ...
             point_numbers = np.array(list(self.known_points.keys()))
@@ -58,8 +58,11 @@ class GetKnownPoints:
                     print(f"Stored point {point_number} at x: {x}, y: {y}")
 
             rospy.loginfo(f"Stored {len(self.known_points)} known points in {known_points_file}")
+            if len(self.known_points) < 6:
+                rospy.logwarn("6-10 known points spread across the whole map give the best TPS map alignment.")
         else:
-            rospy.logwarn("Please store at least 3 known points.")
+            rospy.logwarn("Please store at least 4 known points (the TPS map transform needs >= 4; 6-10 is best). "
+                          "Spread them across the map, avoid collinear points, and use the same order on every robot.")
 
 if __name__ == '__main__':
     KnownPoints = GetKnownPoints()
