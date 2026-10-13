@@ -8,7 +8,7 @@ This package is for general bringup of the robot. The general functions of the s
 ## Launch
 The primary launch files are `minimal.launch` and `robot.launch` and `get_reference_points.launch`. Other launch files are provided for convenience.
 - **minimal.launch**: Starts the minimal scripts needed to run the robot (mcu_comms and the twist multiplexer).
-- **get_reference_points.launch**: Localizes and starts the get_known_points script. Used to get the known points needed for the transformation matrix.
+- **get_reference_points_short.launch / get_reference_points_tall.launch**: Localizes and starts the get_known_points script. Used to get the known points needed for the map transform; writes `mattbot_dds/scripts/known_points_short.txt` / `known_points_tall.txt`.
 - **sense_and_map.launch**: Launches the stack necessary for mapping. (mcu_comms, twist multiplexer, LIDAR, Camera, SLAM)
 - **sense_and_localize.launch**: Launches the stack necessary for localizing within a new map. (mcu_comms, twist multiplexer, LIDAR, Camera, localization)
 - **short.launch**: Launches the stack for operating the short robot (mcu_comms, twist multiplexer, LiDAR, Camera, localization, object detection, navigation, dds communication)

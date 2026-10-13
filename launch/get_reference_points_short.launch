@@ -39,7 +39,7 @@
   </include>
 
   <node pkg="$(arg package)" type="get_known_points.py" name="get_known_points_node" output="screen">
-    <!-- Add any additional node-specific parameters here -->
+    <param name="known_points_file" value="$(find mattbot_dds)/scripts/known_points_short.txt"/>
   </node>
 
 </launch>

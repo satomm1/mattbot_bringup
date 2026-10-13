@@ -48,6 +48,7 @@
 
   <!-- Fleet / logging -->
   <arg name="sqlite" default="false"/>             <!-- Persist DDS traffic to SQLite via mattbot_dds -->
+  <arg name="known_points" default="kaist"/>       <!-- Map transform points: mattbot_dds/scripts/known_points_<value>.txt -->
 
   <!-- Experimental: object ledger + blockage belief (mattbot_dds; off by default) -->
   <arg name="ledger" default="false"/>             <!-- observation_ledger: shared ledger of confirmed objects over DDS (/ledger) -->
@@ -119,6 +120,7 @@
 
   <include file="$(find mattbot_dds)/launch/dds.launch">
     <arg name="sqlite" value="$(arg sqlite)"/>
+    <arg name="known_points" value="$(arg known_points)"/>
     <arg name="tall" value="$(arg tall)"/>
     <arg name="enable_ledger" value="$(arg ledger)"/>
     <arg name="enable_object_belief" value="$(arg object_belief)"/>

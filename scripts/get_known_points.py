@@ -41,10 +41,12 @@ class GetKnownPoints:
                 return
             
 
-            # Find the mattbot_dds package and write the known points to the known_points.txt file
+            # Write the known points to ~known_points_file (default: mattbot_dds/scripts/known_points_short.txt)
             rospack = rospkg.RosPack()
             package_path = rospack.get_path('mattbot_dds')
-            known_points_file = os.path.join(package_path, 'scripts/known_points.txt')
+            known_points_file = rospy.get_param(
+                '~known_points_file', os.path.join(package_path, 'scripts', 'known_points_short.txt')
+            )
 
             # Write the x,y values of the known points to the file. x and y are separated by a comma. Each point is on a new line.
             with open(known_points_file, 'w') as f:
