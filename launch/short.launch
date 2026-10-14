@@ -56,7 +56,11 @@
   <arg name="observe_max_detour_m" default="15.0"/>  <!-- Ignore objects needing more extra driving than this (m) -->
   <arg name="observe_detour_n_trips" default="5"/>  <!-- N: fleet trips that keep avoiding an object until someone re-checks it -->
   <arg name="observe_detour_margin_m" default="0.0"/>  <!-- Detour only if V - C exceeds this (m) -->
-  <arg name="ledger_blockout" default="$(arg observe_detour)"/>  <!-- occupancy_grid_mapper: plan around every ledger object until it is removed -->
+  <arg name="observe_scout" default="false"/>  <!-- While idle, decide whether to drive out only to re-check an object (/observation/scout; decision only, needs ledger + observe; turns on importance) -->
+  <arg name="observe_max_scout_m" default="30.0"/>  <!-- Ignore objects whose viewpoints are further than this from the robot (m, one way) -->
+  <arg name="observe_scout_fixed_s" default="0.0"/>  <!-- Scout opportunity cost: fixed cost of sending a scout (s of driving) -->
+  <arg name="observe_scout_per_s_away" default="0.0"/>  <!-- Scout opportunity cost per second the robot is away (s per s) -->
+  <arg name="ledger_blockout" default="$(eval arg('observe_detour') or arg('observe_scout'))"/>  <!-- occupancy_grid_mapper: plan around every ledger object until it is removed (V of detours and scouts assumes this) -->
   <param name="enable_ledger_blockout" value="$(arg ledger_blockout)"/>
 
   <arg name="package" default="mattbot_bringup"/>
@@ -143,6 +147,10 @@
       <arg name="observe_max_detour_m" value="$(arg observe_max_detour_m)"/>
       <arg name="observe_detour_n_trips" value="$(arg observe_detour_n_trips)"/>
       <arg name="observe_detour_margin_m" value="$(arg observe_detour_margin_m)"/>
+      <arg name="observe_scout" value="$(arg observe_scout)"/>
+      <arg name="observe_max_scout_m" value="$(arg observe_max_scout_m)"/>
+      <arg name="observe_scout_fixed_s" value="$(arg observe_scout_fixed_s)"/>
+      <arg name="observe_scout_per_s_away" value="$(arg observe_scout_per_s_away)"/>
     </include>
   </group>
   <group if="$(arg multi_agent_nav)">
