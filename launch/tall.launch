@@ -63,6 +63,9 @@
   <arg name="observe_max_scout_m" default="30.0"/>  <!-- Ignore objects whose viewpoints are further than this from the robot (m, one way) -->
   <arg name="observe_scout_fixed_s" default="0.0"/>  <!-- Scout opportunity cost: fixed cost of sending a scout (s of driving) -->
   <arg name="observe_scout_per_s_away" default="0.0"/>  <!-- Scout opportunity cost per second the robot is away (s per s) -->
+  <arg name="observe_coordinate" default="true"/>  <!-- Announce planned checks; detours / scouts give way to other robots' earlier checks -->
+  <arg name="observe_intent_margin_s" default="10.0"/>  <!-- Earlier by more than this wins; within it the lower robot id -->
+  <arg name="observe_intent_commit_s" default="15.0"/>  <!-- A detour this close to its viewpoint no longer gives way (s) -->
   <arg name="ledger_blockout" default="$(eval arg('observe_detour') or arg('observe_scout'))"/>  <!-- occupancy_grid_mapper: plan around every ledger object until it is removed (V of detours and scouts assumes this) -->
   <param name="enable_ledger_blockout" value="$(arg ledger_blockout)"/>
 
@@ -152,6 +155,9 @@
     <arg name="observe_max_scout_m" value="$(arg observe_max_scout_m)"/>
     <arg name="observe_scout_fixed_s" value="$(arg observe_scout_fixed_s)"/>
     <arg name="observe_scout_per_s_away" value="$(arg observe_scout_per_s_away)"/>
+    <arg name="observe_coordinate" value="$(arg observe_coordinate)"/>
+    <arg name="observe_intent_margin_s" value="$(arg observe_intent_margin_s)"/>
+    <arg name="observe_intent_commit_s" value="$(arg observe_intent_commit_s)"/>
   </include>
 
   <include file="$(find mattbot_dds)/launch/dds.launch">
