@@ -26,6 +26,11 @@
 
   <!-- Perception -->
   <arg name="use_llm_for_images" default="false"/>  <!-- Send unknown-object crops to gemini_bridge for labeling -->
+  <arg name="display_min_conf" default="0.0"/>      <!-- OSOD: only draw boxes at or above this confidence on /camera/color/image_with_boxes -->
+  <arg name="display_depth" default="true"/>        <!-- OSOD: write estimated depth on each drawn box -->
+  <arg name="display_overlapped" default="false"/>  <!-- OSOD: write "Overlapped" on drawn boxes that overlap the map -->
+  <arg name="turning_threshold" default="0.15"/>    <!-- OSOD: skip frames while |cmd_vel angular.z| exceeds this (rad/s) -->
+  <arg name="turning_cooldown" default="0.25"/>     <!-- OSOD: keep skipping frames this long after a turn (s) -->
 
   <!-- Data capture (images; no audio stack in short.launch) -->
   <arg name="capture" default="false"/>            <!-- mattbot_capture: capture_node, uploader, auto_trigger; capture:=true also enables camera IR -->
@@ -128,6 +133,11 @@
   <include file="$(find mattbot_image_detection)/launch/detect_updated_osod.launch">
     <arg name="tall" default="$(arg tall)"/>
     <arg name="use_llm_for_images" value="$(arg use_llm_for_images)"/>
+    <arg name="display_min_conf" value="$(arg display_min_conf)"/>
+    <arg name="display_depth" value="$(arg display_depth)"/>
+    <arg name="display_overlapped" value="$(arg display_overlapped)"/>
+    <arg name="turning_threshold" value="$(arg turning_threshold)"/>
+    <arg name="turning_cooldown" value="$(arg turning_cooldown)"/>
     <arg name="observe_evaluate" value="$(arg observe_evaluate)"/>
     <arg name="observe_use_depth" value="$(arg observe_use_depth)"/>
     <arg name="observe_min_absent_frames" value="$(arg observe_min_absent_frames)"/>
