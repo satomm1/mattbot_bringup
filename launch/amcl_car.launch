@@ -1,4 +1,14 @@
 <launch>
+<!-- Odometry and laser model values: AMCL uses these from startup (they are not reconfigured at runtime, since any
+     AMCL reconfigure rebuilds the particle filter). Defaults are the short robot's; tall.launch passes its own. -->
+<arg name="odom_alpha1" default="0.075"/>
+<arg name="odom_alpha2" default="0.2"/>
+<arg name="odom_alpha3" default="0.1"/>
+<arg name="odom_alpha4" default="0.075"/>
+<arg name="laser_z_hit" default="0.95"/>
+<arg name="laser_z_rand" default="0.05"/>
+<arg name="laser_sigma_hit" default="0.15"/>
+
 <node pkg="amcl" type="amcl" name="amcl" output="screen">
   <!-- Publish scans from best pose at a max of 10 Hz -->
   <param name="odom_model_type" value="diff"/>
@@ -9,16 +19,16 @@
   <param name="max_particles" value="3000"/>
   <param name="kld_err" value="0.01"/>
   <param name="kld_z" value="0.99"/>
-  <param name="odom_alpha1" value="0.1"/>
-  <param name="odom_alpha2" value="0.2"/>
+  <param name="odom_alpha1" value="$(arg odom_alpha1)"/>
+  <param name="odom_alpha2" value="$(arg odom_alpha2)"/>
   <!-- translation std dev, m -->
-  <param name="odom_alpha3" value="0.2"/>
-  <param name="odom_alpha4" value="0.05"/>
-  <param name="laser_z_hit" value="0.9"/>
+  <param name="odom_alpha3" value="$(arg odom_alpha3)"/>
+  <param name="odom_alpha4" value="$(arg odom_alpha4)"/>
+  <param name="laser_z_hit" value="$(arg laser_z_hit)"/>
   <param name="laser_z_short" value="0.05"/>
   <param name="laser_z_max" value="0.05"/>
-  <param name="laser_z_rand" value="0.1"/>
-  <param name="laser_sigma_hit" value="0.2"/>
+  <param name="laser_z_rand" value="$(arg laser_z_rand)"/>
+  <param name="laser_sigma_hit" value="$(arg laser_sigma_hit)"/>
   <param name="laser_lambda_short" value="0.1"/>
   <param name="laser_model_type" value="likelihood_field"/>
   <!-- <param name="laser_model_type" value="beam"/> -->
@@ -28,8 +38,10 @@
   <param name="odom_frame_id" value="odom"/>
   <param name="resample_interval" value="1"/>
   <param name="transform_tolerance" value="0.1"/>
-  <param name="recovery_alpha_slow" value="0.001"/>
-  <param name="recovery_alpha_fast" value="0.1"/>
+  <!-- Random-particle recovery off: it teleported the pose on the first fast ALIGN turn after the filter reset.
+       Lost-localization recovery is handled by mattbot_mcl/localization_quality. -->
+  <param name="recovery_alpha_slow" value="0.0"/>
+  <param name="recovery_alpha_fast" value="0.0"/>
   <param name="use_map_topic" value="true"/>
   <param name="first_map_only" value="true"/>
 </node>
