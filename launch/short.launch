@@ -18,6 +18,7 @@
   <arg name="robot_clearance" default="0.4"/>    <!-- Planning radius from robot center (m); ~robot_clearance -->
   <arg name="cruising_velocity" default="0.40"/> <!-- Nominal path speed (m/s); published as /cruising_velocity -->
   <arg name="max_plan_time_sec" default="15.0"/> <!-- Max wall-clock time (s) for A* path planning -->
+  <arg name="amcl_corrected_model" default="true"/>  <!-- AMCL diff-corrected odom model + retuned alphas (non-car only); false = legacy diff model -->
   <param name="cruising_velocity" value="$(arg cruising_velocity)"/>
   <param name="enable_depth_occupancy_grid" value="$(arg enable_depth_occupancy_grid)"/>
   <param name="enable_object_blockout" value="$(arg enable_object_blockout)"/>
@@ -105,7 +106,11 @@
 
     <!-- Launch AMCL for the robot -->
     <include file="$(find mattbot_bringup)/launch/amcl.launch">
-      <!-- No arguments needed -->
+      <arg name="odom_model_type" value="$(eval 'diff-corrected' if arg('amcl_corrected_model') else 'diff')"/>
+      <arg name="odom_alpha1" value="$(eval 0.02 if arg('amcl_corrected_model') else 0.075)"/>
+      <arg name="odom_alpha2" value="$(eval 0.02 if arg('amcl_corrected_model') else 0.2)"/>
+      <arg name="odom_alpha3" value="$(eval 0.01 if arg('amcl_corrected_model') else 0.1)"/>
+      <arg name="odom_alpha4" value="$(eval 0.005 if arg('amcl_corrected_model') else 0.075)"/>
     </include>
   </group>
 

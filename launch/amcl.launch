@@ -1,6 +1,9 @@
 <launch>
 <!-- Odometry and laser model values: AMCL uses these from startup (they are not reconfigured at runtime, since any
      AMCL reconfigure rebuilds the particle filter). Defaults are the short robot's; tall.launch passes its own. -->
+<!-- diff = legacy model (noise std = alpha * step^2, nearly zero for small steps); diff-corrected uses
+     std = sqrt(alpha) * step and needs much smaller alphas -->
+<arg name="odom_model_type" default="diff"/>
 <arg name="odom_alpha1" default="0.075"/>
 <arg name="odom_alpha2" default="0.2"/>
 <arg name="odom_alpha3" default="0.1"/>
@@ -11,7 +14,7 @@
 
 <node pkg="amcl" type="amcl" name="amcl" output="screen">
   <!-- Publish scans from best pose at a max of 10 Hz -->
-  <param name="odom_model_type" value="diff"/>
+  <param name="odom_model_type" value="$(arg odom_model_type)"/>
   <param name="odom_alpha5" value="0.1"/>
   <param name="gui_publish_rate" value="10.0"/>
   <param name="laser_max_beams" value="100"/>
