@@ -68,7 +68,11 @@
   <arg name="observe_max_detour_m" default="15.0"/>  <!-- Ignore objects needing more extra driving than this (m) -->
   <arg name="observe_detour_n_trips" default="5"/>  <!-- N: fleet trips that keep avoiding an object until someone re-checks it -->
   <arg name="observe_detour_margin_m" default="0.0"/>  <!-- Detour only if V - C exceeds this (m) -->
-  <arg name="ledger_blockout" default="$(arg observe_detour)"/>  <!-- occupancy_grid_mapper: plan around every ledger object until it is removed -->
+  <arg name="observe_scout" default="false"/>  <!-- While idle, decide whether to drive out only to re-check an object (/observation/scout; needs ledger + observe) -->
+  <arg name="observe_scout_execute" default="false"/>  <!-- Drive GO scout decisions: to the viewpoint, look, back to the start -->
+  <arg name="observe_scout_min_idle_s" default="10.0"/>  <!-- Scout only after no goal for this long (s) -->
+  <arg name="scout_robot_heights" default="short"/>  <!-- ROBOT_HEIGHT values allowed to scout; any = every robot -->
+  <arg name="ledger_blockout" default="$(eval arg('observe_detour') or arg('observe_scout'))"/>  <!-- occupancy_grid_mapper: plan around every ledger object until it is removed -->
   <param name="enable_ledger_blockout" value="$(arg ledger_blockout)"/>
 
   <arg name="package" default="mattbot_bringup"/>
@@ -118,6 +122,10 @@
     <arg name="observe_max_detour_m" value="$(arg observe_max_detour_m)"/>
     <arg name="observe_detour_n_trips" value="$(arg observe_detour_n_trips)"/>
     <arg name="observe_detour_margin_m" value="$(arg observe_detour_margin_m)"/>
+    <arg name="observe_scout" value="$(arg observe_scout)"/>
+    <arg name="observe_scout_execute" value="$(arg observe_scout_execute)"/>
+    <arg name="observe_scout_min_idle_s" value="$(arg observe_scout_min_idle_s)"/>
+    <arg name="scout_robot_heights" value="$(arg scout_robot_heights)"/>
   </include>
 
   <include file="$(find mattbot_dds)/launch/dds.launch">

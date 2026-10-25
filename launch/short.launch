@@ -64,6 +64,9 @@
   <arg name="observe_detour_n_trips" default="5"/>  <!-- N: fleet trips that keep avoiding an object until someone re-checks it -->
   <arg name="observe_detour_margin_m" default="0.0"/>  <!-- Detour only if V - C exceeds this (m) -->
   <arg name="observe_scout" default="false"/>  <!-- While idle, decide whether to drive out only to re-check an object (/observation/scout; decision only, needs ledger + observe; turns on importance) -->
+  <arg name="observe_scout_execute" default="false"/>  <!-- Drive GO scout decisions: to the viewpoint, look, back to the start (needs observe_scout) -->
+  <arg name="observe_scout_min_idle_s" default="10.0"/>  <!-- Scout only after no goal for this long (s); raise above patrol pauses -->
+  <arg name="scout_robot_heights" default="short"/>  <!-- ROBOT_HEIGHT values allowed to scout, e.g. short or short,tall; any = every robot -->
   <arg name="observe_max_scout_m" default="30.0"/>  <!-- Ignore objects whose viewpoints are further than this from the robot (m, one way) -->
   <arg name="observe_scout_fixed_s" default="0.0"/>  <!-- Scout opportunity cost: fixed cost of sending a scout (s of driving) -->
   <arg name="observe_scout_per_s_away" default="0.0"/>  <!-- Scout opportunity cost per second the robot is away (s per s) -->
@@ -168,6 +171,9 @@
       <arg name="observe_detour_n_trips" value="$(arg observe_detour_n_trips)"/>
       <arg name="observe_detour_margin_m" value="$(arg observe_detour_margin_m)"/>
       <arg name="observe_scout" value="$(arg observe_scout)"/>
+      <arg name="observe_scout_execute" value="$(arg observe_scout_execute)"/>
+      <arg name="observe_scout_min_idle_s" value="$(arg observe_scout_min_idle_s)"/>
+      <arg name="scout_robot_heights" value="$(arg scout_robot_heights)"/>
       <arg name="observe_max_scout_m" value="$(arg observe_max_scout_m)"/>
       <arg name="observe_scout_fixed_s" value="$(arg observe_scout_fixed_s)"/>
       <arg name="observe_scout_per_s_away" value="$(arg observe_scout_per_s_away)"/>
