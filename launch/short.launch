@@ -53,6 +53,7 @@
   <arg name="observe" default="false"/>            <!-- Stop on the path to check objects with belief <= observe_check_below_belief (needs ledger; standard navigator only) -->
   <arg name="observe_dwell_s" default="4.0"/>      <!-- Time to hold still facing each object (s) -->
   <arg name="observe_check_below_belief" default="0.5"/>
+  <arg name="observe_cooldown_s" default="120.0"/>  <!-- No new check of an object this soon after its last check (s; lower only for testing) -->
   <arg name="observe_evaluate" default="$(arg observe)"/>  <!-- observation_evaluator: decide present / absent and update the ledger -->
   <arg name="observe_use_depth" default="true"/>   <!-- Also require the depth camera to agree before declaring an object gone -->
   <arg name="observe_min_absent_frames" default="8"/>  <!-- Clear frames needed in one window to declare an object gone -->
@@ -159,6 +160,7 @@
       <arg name="observe" value="$(arg observe)"/>
       <arg name="observe_dwell_s" value="$(arg observe_dwell_s)"/>
       <arg name="observe_check_below_belief" value="$(arg observe_check_below_belief)"/>
+      <arg name="observe_cooldown_s" value="$(arg observe_cooldown_s)"/>
       <arg name="observe_importance" value="$(arg observe_importance)"/>
       <arg name="observe_landmarks_file" value="$(arg observe_landmarks_file)"/>
       <arg name="observe_detour" value="$(arg observe_detour)"/>
