@@ -16,6 +16,8 @@
   <arg name="robot_clearance" default="0.4"/>    <!-- Planning radius from robot center (m); ~robot_clearance -->
   <arg name="cruising_velocity" default="0.40"/> <!-- Nominal path speed (m/s); published as /cruising_velocity -->
   <arg name="max_plan_time_sec" default="15.0"/> <!-- Max wall-clock time (s) for A* path planning -->
+  <arg name="local_planner" default="classical"/>  <!-- TRACK controller: classical, or qlp (learned planner, q_local_planner; standard navigator only) -->
+  <arg name="qlp_bundle" default=""/>            <!-- qlp: path of a q_local_planner deploy bundle -->
   <arg name="amcl_corrected_model" default="true"/>  <!-- AMCL diff-corrected odom model + retuned alphas (non-car only); false = legacy diff model -->
   <param name="cruising_velocity" value="$(arg cruising_velocity)"/>
   <param name="enable_depth_occupancy_grid" value="$(arg enable_depth_occupancy_grid)"/>
@@ -158,6 +160,8 @@
   </include> 
 
   <include file="$(find mattbot_navigation)/launch/localize_and_navigate_combined_map_tall.launch">
+    <arg name="local_planner" value="$(arg local_planner)"/>
+    <arg name="qlp_bundle" value="$(arg qlp_bundle)"/>
     <arg name="patrol" value="$(arg patrol)"/>
     <arg name="tall"   value="$(arg tall)"/>
     <arg name="car"    value="$(arg car)"/>
