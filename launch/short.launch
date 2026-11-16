@@ -20,7 +20,10 @@
   <arg name="max_plan_time_sec" default="15.0"/> <!-- Max wall-clock time (s) for A* path planning -->
   <arg name="local_planner" default="classical"/>  <!-- TRACK controller: classical, or qlp (learned planner, q_local_planner; standard navigator only) -->
   <arg name="qlp_bundle" default=""/>            <!-- qlp: path of a q_local_planner deploy bundle -->
-  <arg name="qlp_obstacle_source" default="none"/>  <!-- qlp: people for its obstacle rows: none | tracked_people (starts the people tracker) -->
+  <arg name="qlp_obstacle_source" default="tracked_people"/>  <!-- qlp: people for its obstacle rows: tracked_people (starts the people tracker when local_planner:=qlp) | none -->
+  <arg name="range_method" default="robust"/>       <!-- detector depth: robust (torso/central window, corrected centre) | legacy (the original estimate) -->
+  <arg name="person_range_source" default="lidar"/> <!-- people's range: lidar (/scan in the box's bearing span, camera fallback) | camera -->
+  <arg name="publish_range_debug" default="false"/>  <!-- /detected_objects_range_debug: every method side by side -->
   <arg name="amcl_corrected_model" default="true"/>  <!-- AMCL diff-corrected odom model + retuned alphas (non-car only); false = legacy diff model -->
   <param name="cruising_velocity" value="$(arg cruising_velocity)"/>
   <param name="enable_depth_occupancy_grid" value="$(arg enable_depth_occupancy_grid)"/>
@@ -153,10 +156,13 @@
     <arg name="observe_evaluate" value="$(arg observe_evaluate)"/>
     <arg name="observe_use_depth" value="$(arg observe_use_depth)"/>
     <arg name="observe_min_absent_frames" value="$(arg observe_min_absent_frames)"/>
+    <arg name="range_method" value="$(arg range_method)"/>
+    <arg name="person_range_source" value="$(arg person_range_source)"/>
+    <arg name="publish_range_debug" value="$(arg publish_range_debug)"/>
   </include> 
 
   <!-- Map-frame people tracker (positions + velocities) for the learned local planner's obstacle rows -->
-  <include if="$(eval qlp_obstacle_source == 'tracked_people')" file="$(find mattbot_image_detection)/launch/people_tracker.launch"/>
+  <include if="$(eval local_planner == 'qlp' and qlp_obstacle_source == 'tracked_people')" file="$(find mattbot_image_detection)/launch/people_tracker.launch"/>
 
   <!-- Localization and navigation: default v2, or multi-agent variant when multi_agent_nav is true -->
   <group unless="$(arg multi_agent_nav)">
