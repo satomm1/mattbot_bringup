@@ -27,8 +27,8 @@
   <arg name="amcl_corrected_model" default="true"/>  <!-- AMCL diff-corrected odom model + retuned alphas (non-car only); false = legacy diff model -->
   <arg name="amcl_selective_resampling" default="true"/>  <!-- AMCL resamples only when the effective particle count drops below half (avoids particle depletion during spins) -->
   <arg name="lidar_stamp_mode" default="sweep_mid"/>  <!-- rplidar scan stamp: sweep_mid (mean sweep time; removes AMCL heading bias while turning) | sweep_start | legacy -->
-  <arg name="localize_spin_rate" default="0.75"/>  <!-- Navigator localize / relocalize spin rate (rad/s); was 1.5 -->
-  <arg name="relocalize_duration_sec" default="10.0"/>  <!-- Relocalize spin length (s); 10 s at 0.75 rad/s = the old 5 s at 1.5 rad/s -->
+  <arg name="localize_spin_rate" default="1.0"/>  <!-- Navigator localize / relocalize spin rate (rad/s); was 1.5 -->
+  <arg name="relocalize_duration_sec" default="6.5"/>  <!-- Max relocalize spin (s): ~one turn at 1.0 rad/s. Only spins if the stationary check after a recovery fails, and stops early once validated -->
   <param name="cruising_velocity" value="$(arg cruising_velocity)"/>
   <param name="enable_depth_occupancy_grid" value="$(arg enable_depth_occupancy_grid)"/>
   <param name="enable_object_blockout" value="$(arg enable_object_blockout)"/>
