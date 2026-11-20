@@ -3,13 +3,9 @@ import time
 import math
 import spidev
 import struct
-import socket
-import json
 import os
 
-from rospy_message_converter import message_converter
-
-from geometry_msgs.msg import Twist, Pose, Point, Quaternion, Vector3, TransformStamped
+from geometry_msgs.msg import Twist, Quaternion, TransformStamped
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from tf2_msgs.msg import TFMessage
@@ -46,7 +42,8 @@ class MCU_Comms:
     def __init__(self):
 
         # Initialize the node
-        rospy.init_node('mcu_comms', anonymous=True)
+        # Not anonymous: a second instance must replace this one, not fight it for the SPI device
+        rospy.init_node('mcu_comms')
 
         # Publish the odometry data
         self.odom_pub = rospy.Publisher("/odom", Odometry, queue_size=10)
@@ -245,14 +242,8 @@ class MCU_Comms:
         if pos_x is None and pos_y is None and pos_theta is None:
             confirmation_message = [90, 170]
         else:
-            # Convert position data to bytes
-            pos_x_bytes = float_to_bytes(pos_x)
-            pos_y_bytes = float_to_bytes(pos_y)
-            pos_theta_bytes = float_to_bytes(pos_theta)
-
-            confirmation_message = [90, 170, pos_x_bytes[3], pos_x_bytes[2], pos_x_bytes[1], pos_x_bytes[0],
-                                    pos_y_bytes[3], pos_y_bytes[2], pos_y_bytes[1], pos_y_bytes[0],
-                                    pos_theta_bytes[3], pos_theta_bytes[2], pos_theta_bytes[1], pos_theta_bytes[0]]
+            # Starting pose as big-endian floats (bytes 2-13)
+            confirmation_message = [90, 170] + list(struct.pack('>fff', pos_x, pos_y, pos_theta))
 
         # Send the confirmation message to the MCU
         self._spi_exchange(confirmation_message)
@@ -290,11 +281,7 @@ class MCU_Comms:
     @staticmethod
     def _velocity_message(lin_cmd, ang_cmd):
         """Velocity message: [45, linear (big-endian float), angular (big-endian float)]."""
-        lin_vel_bytes = float_to_bytes(lin_cmd)
-        ang_vel_bytes = float_to_bytes(ang_cmd)
-        return [45,  # Indicates velocity message
-                lin_vel_bytes[3],lin_vel_bytes[2],lin_vel_bytes[1],lin_vel_bytes[0],  # Linear velocity
-                ang_vel_bytes[3],ang_vel_bytes[2],ang_vel_bytes[1],ang_vel_bytes[0]]  # Angular velocity
+        return [45] + list(struct.pack('>ff', lin_cmd, ang_cmd))  # 45 indicates velocity message
 
     def run(self):
         """
@@ -342,8 +329,7 @@ class MCU_Comms:
             if msg_type == 7: # Received dead reckoning data
 
                 # Extract the dead reckoning data (converts from bytes to float)
-                V_dr = bytes_to_float(list(reversed(msg[1:5])))
-                w_dr = bytes_to_float(list(reversed(msg[5:9])))
+                V_dr, w_dr = struct.unpack('>ff', bytes(msg[1:9]))
 
                 # Load the data into an Odometry Message
                 odom = Odometry()
@@ -379,9 +365,7 @@ class MCU_Comms:
             elif msg_type == 8:  # Recieved position data
 
                 # Extract the position data (converts from bytes to float)
-                pos_x = bytes_to_float(list(reversed(msg[1:5])))
-                pos_y = bytes_to_float(list(reversed(msg[5:9])))
-                pos_theta = bytes_to_float(list(reversed(msg[9:13])))
+                pos_x, pos_y, pos_theta = struct.unpack('>fff', bytes(msg[1:13]))
 
                 # Load the data into a TF Message
                 tf_msg = TFMessage()
@@ -410,8 +394,7 @@ class MCU_Comms:
             elif msg_type == 9: # Received IMU data
 
                 # Get roll/pitch in degrees
-                roll = bytes_to_float(list(reversed(msg[1:5])))
-                pitch = bytes_to_float(list(reversed(msg[5:9])))
+                roll, pitch = struct.unpack('>ff', bytes(msg[1:9]))
 
                 roll_rad = roll * (3.141592653589793 / 180.0)  # Convert to radians
                 pitch_rad = pitch * (3.141592653589793 / 180.0)
@@ -443,13 +426,11 @@ class MCU_Comms:
 
             elif msg_type == 15:  # Received IMU Orientation XY data
 
-                qx = bytes_to_float(list(reversed(msg[1:5])))
-                qy = bytes_to_float(list(reversed(msg[5:9])))
+                qx, qy = struct.unpack('>ff', bytes(msg[1:9]))
 
             elif msg_type == 16:  # Received IMU Orientation ZW data
 
-                qz = bytes_to_float(list(reversed(msg[1:5])))
-                qw = bytes_to_float(list(reversed(msg[5:9])))
+                qz, qw = struct.unpack('>ff', bytes(msg[1:9]))
 
                 imu = Imu()
                 # provide header information
@@ -518,8 +499,7 @@ class MCU_Comms:
                         rospy.loginfo("[MCU Comms] Button 3 released")
             elif msg_type == 6: # Received temperature/humidity data
                 # Keep the latest values; they go out with the next air quality publish
-                air_quality_msg.temperature = bytes_to_float(list(reversed(msg[1:5])))
-                air_quality_msg.relative_humidity = bytes_to_float(list(reversed(msg[5:9])))
+                air_quality_msg.temperature, air_quality_msg.relative_humidity = struct.unpack('>ff', bytes(msg[1:9]))
                 have_temp_humidity = True
 
             elif msg_type == 5: # Received air quality data
@@ -528,8 +508,7 @@ class MCU_Comms:
                 if have_temp_humidity and now - last_air_quality_pub >= AIR_QUALITY_PERIOD:
                     last_air_quality_pub = now
 
-                    voc = struct.unpack('i', bytes(list(reversed(msg[1:5]))))[0]
-                    nox = struct.unpack('i', bytes(list(reversed(msg[5:9]))))[0]
+                    voc, nox = struct.unpack('>ii', bytes(msg[1:9]))
 
                     air_quality_msg.header.stamp = rospy.Time.now()
                     air_quality_msg.voc_index = float(voc)
@@ -591,24 +570,6 @@ def crc8(data):
         crc = _CRC8_TABLE[crc ^ b]
     return crc
 
-def float_to_bytes(float_number):
-    """
-    This function takes a 32-bit float and returns a list of four 8-bit integers
-    """
-    # Pack the 32-bit float into bytes
-    packed_data = struct.pack('f', float_number)
-
-    # Unpack the bytes into four 8-bit integers
-    int_list = struct.unpack('BBBB', packed_data)
-
-    return int_list
-    
-def bytes_to_float(byte_array):
-    # Pack the bytes into a 32-bit float
-    float_number = struct.unpack('f', bytes(byte_array))[0]
-
-    return float_number
-    
 def bytes_to_unsigned_int(high_byte, low_byte):
     # Pack the bytes into a 16 bit unsigned int
     return (high_byte << 8) | low_byte
