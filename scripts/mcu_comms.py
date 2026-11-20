@@ -1,5 +1,6 @@
 import rospy
 import time
+import math
 import spidev
 import struct
 import socket
@@ -16,8 +17,23 @@ from tf.transformations import quaternion_from_euler
 from std_msgs.msg import Bool, Float32, UInt8
 from mattbot_bringup.msg import AirQuality
 
-BAUD_RATE = 1000000 # Baud rate for SPI
-SPI_SYNC = 55  # Sync byte prepended to every 16-byte MCU payload
+BAUD_RATE = 1000000 # Baud rate for SPI (coupled to MCU interrupt latency, see _spi_exchange)
+SPI_SYNC = 55  # Sync byte prepended to every 16-byte payload
+FRAME_LEN = 16  # Payload bytes in each direction
+
+# Protocol v2 adds integrity checks to every 16-byte message, both directions:
+#   byte 15: CRC-8 (poly 0x31, init 0xFF) over bytes 0..14
+#   byte 14: (MCU -> Jetson only) sequence number, incremented for every new MCU message
+# Negotiated at bringup: the Jetson sends its version in bringup byte 2, the MCU replies with its
+# version in ack byte 4. Older firmware sends 0 there, and the Jetson then skips the checks.
+# Byte 15 of Jetson messages is unused by older firmware, so the CRC is always sent.
+PROTOCOL_VERSION = 2
+SEQ_INDEX = 14
+CRC_INDEX = 15
+
+MAX_BAD_FRAMES = 20  # Consecutive unusable MCU frames (0.2 s at 100 Hz) before re-handshaking
+AIR_QUALITY_PERIOD = 1.0  # Seconds between /air_quality publishes
+KNOWN_MSG_TYPES = (5, 6, 7, 8, 9, 10, 15, 16)
 
 """
 Communicates with the MCU to send and receive data via SPI.
@@ -74,6 +90,13 @@ class MCU_Comms:
 
         self.robot_id = 0x00
 
+        # Link integrity state, set by mcu_startup()
+        self.mcu_crc = False  # True when both sides speak protocol v2 (CRC + sequence checks)
+        self.last_mcu_seq = None
+        self.crc_errors = 0
+        self.repeated_frames = 0
+        self.unknown_frames = 0
+
         self.button_status = [False, False, False]
         # Publisher for button status
         self.button_pub = rospy.Publisher('/button_status', UInt8, queue_size=10)
@@ -82,74 +105,145 @@ class MCU_Comms:
         self.mcu_connected_pub = rospy.Publisher(
             "/mcu_connected", Bool, queue_size=1, latch=True
         )
+        self.link_up = False
         self._set_mcu_connected(False)
 
-        # Initialize linear/angular velocity commands
-        self.lin_cmd = 0.0
-        self.ang_cmd = 0.0
+        # Latest velocity command as one tuple so the SPI loop never sees a half-updated pair:
+        # (linear, angular, time.monotonic() of receipt or None if no command since the last reset)
+        self._cmd = (0.0, 0.0, None)
+        self._timeout_logged_stamp = None
+
+        # Send zero velocity when /cmd_vel is older than this (s). twist_mux never publishes a zero
+        # when its inputs time out, so without this a dead publisher's last command runs forever.
+        # <= 0 disables the timeout.
+        self.cmd_vel_timeout = rospy.get_param('~cmd_vel_timeout', 0.5)
 
         # Subscribe to the cmd_vel topic to receive velocity commands
         rospy.Subscriber("/cmd_vel", Twist, self.vel_callback)
 
     def _set_mcu_connected(self, connected):
-        """Publish latched MCU handshake / SPI-loop connection state."""
+        """Publish latched MCU link state (True once valid data is flowing)."""
+        self.link_up = connected
         self.mcu_connected_pub.publish(Bool(data=connected))
+
+    @staticmethod
+    def _frame(payload):
+        """
+        Pad a Jetson message to 16 bytes and put the CRC-8 of bytes 0..14 in byte 15.
+        """
+        if len(payload) > CRC_INDEX:
+            raise ValueError("MCU payload is limited to %d bytes, got %d" % (CRC_INDEX, len(payload)))
+        frame = list(payload) + [0] * (FRAME_LEN - len(payload))
+        frame[CRC_INDEX] = crc8(frame[:CRC_INDEX])
+        return frame
 
     def _spi_exchange(self, payload):
         """
-        One CS assertion: sync byte (55) plus 16-byte payload.
-        Returns 17 MISO bytes; use _mcu_msg() to get the 16-byte MCU reply.
+        One SPI transaction (a single CS assertion) of 18 bytes in each direction.
+        Returns all 18 MISO bytes; use _mcu_msg() to get the 16-byte MCU message.
+
+            byte:   0        1           2 .. 17           (17)
+            MOSI:   sync=55  payload[0]  payload[1..15]    0x00 trailer
+            MISO:   ignored  underrun    MCU msg[0..15]
+
+        The MCU arms its TX FIFO with its 16-byte message inside the SPI RX interrupt that
+        fires on the sync byte (SPI2RXHandler in JetsonSM.c). By then MISO byte 1 is already
+        being clocked from an empty FIFO, so the MCU message lands in MISO bytes 2..17. The
+        trailing 0x00 only clocks out the last MCU byte; the MCU discards it as a non-sync byte.
+
+        That interrupt must also read the sync byte before MOSI byte 1 has fully arrived. If not,
+        the MCU rejects the frame as "too_late": its MISO bytes are garbage and the MCU never
+        processes it, so its next reply repeats the previous message. The window is one byte
+        time (8 us at 1 MHz), so BAUD_RATE is tied to the MCU's interrupt latency: lowering it is
+        safe, raising it can make the MCU reject every frame.
+
+        The MCU builds each reply while handling the previous frame, so the message returned here
+        answers the frame before this one.
         """
-        return self.spi.xfer([SPI_SYNC] + payload + [0x00])
+        return self.spi.xfer([SPI_SYNC] + self._frame(payload) + [0x00])
 
     @staticmethod
     def _mcu_msg(rcvd):
         """
-        Skip rcvd[0] (MISO during sync clock); return the 16-byte MCU message.
+        Return the 16-byte MCU message from an _spi_exchange() result: drop MISO byte 0 (clocked
+        during sync) and byte 1 (FIFO underrun while the MCU interrupt loads its reply).
         """
         # print("Received from MCU:", rcvd)
         return rcvd[2:18]
 
+    def _check_mcu_msg(self, msg):
+        """
+        Protocol v2: reject MCU messages with a bad CRC, or with the same sequence number as the
+        last accepted one. A repeat means the MCU didn't produce a new message (it rejected or
+        discarded the previous frame, or its state machine stalled), so its data is stale.
+        Always True on protocol v1 firmware, which has neither field.
+        """
+        if not self.mcu_crc:
+            return True
+        if crc8(msg[:CRC_INDEX]) != msg[CRC_INDEX]:
+            self.crc_errors += 1
+            return False
+        if msg[SEQ_INDEX] == self.last_mcu_seq:
+            self.repeated_frames += 1
+            return False
+        self.last_mcu_seq = msg[SEQ_INDEX]
+        return True
+
     def _recover_mcu(self, pos_x=0, pos_y=0, pos_theta=0):
         """
-        Stop motion, tell MCU to shut down, wait for its watchdog, then re-handshake.
+        Re-handshake, restoring the last pose the MCU reported. The MCU accepts bringup in every
+        state (an active MCU stops its wheels first), so no shutdown message or watchdog wait
+        is needed. Returns False if ROS shut down during the handshake.
         """
-        self._set_mcu_connected(False)
-        self.lin_cmd = 0.0
-        self.ang_cmd = 0.0
-        shutdown_message = [90, 0b11110000] + [0] * 14
-        for _ in range(2):
-            self._spi_exchange(shutdown_message)
-        time.sleep(1.1)
-        self.mcu_startup(pos_x=pos_x, pos_y=pos_y, pos_theta=pos_theta)
+        self._clear_cmd()
+        return self.mcu_startup(pos_x=pos_x, pos_y=pos_y, pos_theta=pos_theta)
 
     def mcu_startup(self, pos_x=None, pos_y=None, pos_theta=None):
         """
-        This function is used to bring up the MCU online and confirm communication
+        Handshake with the MCU. Returns True once the confirmation is sent, False if ROS shut
+        down first.
+
+        1. Send bringup [90, 255, PROTOCOL_VERSION] every 0.1 s until the MCU acks with
+           [0, 255, 0, robot_id, mcu_protocol_version].
+        2. Send confirmation [90, 170, x, y, theta] to seed the MCU's dead-reckoning pose.
+
+        Nothing acknowledges the confirmation, so /mcu_connected only goes True once run()
+        receives the first valid data message.
         """
         self._set_mcu_connected(False)
 
         # Bringup message to MCU
-        bringup_message = [90, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        bringup_message = [90, 255, PROTOCOL_VERSION]
 
         # Send bringup message to MCU until received and confirmed
-        bringup_confirmed = False
-        while not bringup_confirmed:
-            bringup_message = [90, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        wait_start = time.monotonic()
+        while True:
+            if rospy.is_shutdown():
+                return False
             rcvd = self._spi_exchange(bringup_message)
             msg = self._mcu_msg(rcvd)
             # print(msg)
 
             # Check if the MCU has confirmed bringup
             if msg[0] == 0 and msg[1] == 255 and msg[2] == 0:
-                bringup_confirmed = True  # MattBot is active
-                self.robot_id = msg[3]  # Get and store the robot ID
-                rospy.loginfo("[MCU Comms] Robot ID: " + str(self.robot_id))
+                mcu_version = msg[4]
+                # A v2 ack carries a CRC; a corrupted one is ignored and bringup resent
+                if mcu_version < 2 or crc8(msg[:CRC_INDEX]) == msg[CRC_INDEX]:
+                    break
+            if time.monotonic() - wait_start > 2.0:
+                rospy.logwarn_throttle(5.0, "[MCU Comms] Waiting for the MCU to answer bringup (is it powered and flashed?)")
             time.sleep(0.1)
+
+        self.robot_id = msg[3]  # Get and store the robot ID
+        self.mcu_crc = min(PROTOCOL_VERSION, mcu_version) >= 2
+        self.last_mcu_seq = msg[SEQ_INDEX] if self.mcu_crc else None
+        self.crc_errors = self.repeated_frames = self.unknown_frames = 0
+        rospy.loginfo("[MCU Comms] Robot ID: %d, MCU protocol v%d%s", self.robot_id, max(mcu_version, 1),
+                      "" if self.mcu_crc else " (no CRC/sequence checks; update MCU firmware)")
 
         # Send confirmation message to MCU
         if pos_x is None and pos_y is None and pos_theta is None:
-            confirmation_message = [90, 170, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            confirmation_message = [90, 170]
         else:
             # Convert position data to bytes
             pos_x_bytes = float_to_bytes(pos_x)
@@ -158,29 +252,59 @@ class MCU_Comms:
 
             confirmation_message = [90, 170, pos_x_bytes[3], pos_x_bytes[2], pos_x_bytes[1], pos_x_bytes[0],
                                     pos_y_bytes[3], pos_y_bytes[2], pos_y_bytes[1], pos_y_bytes[0],
-                                    pos_theta_bytes[3], pos_theta_bytes[2], pos_theta_bytes[1], pos_theta_bytes[0],
-                                    0, 0]
+                                    pos_theta_bytes[3], pos_theta_bytes[2], pos_theta_bytes[1], pos_theta_bytes[0]]
 
         # Send the confirmation message to the MCU
         self._spi_exchange(confirmation_message)
-        self._set_mcu_connected(True)
+        return True
 
     def vel_callback(self, data):
         """
         This function is called whenever a new cmd_vel message is received
         """
-        self.lin_cmd = data.linear.x
-        self.ang_cmd = data.angular.z
+        lin = data.linear.x
+        ang = data.angular.z
+        if not (math.isfinite(lin) and math.isfinite(ang)):
+            # NaN passes every range check in the MCU's SetDesiredSpeed, so never send one
+            rospy.logwarn_throttle(1.0, "[MCU Comms] Ignoring non-finite cmd_vel (%s, %s); stopping", lin, ang)
+            lin = ang = 0.0
+        self._cmd = (lin, ang, time.monotonic())
 
+    def _clear_cmd(self):
+        """Forget the current command so nothing received before now is ever sent."""
+        self._cmd = (0.0, 0.0, None)
 
+    def _current_cmd(self):
+        """Return the (linear, angular) velocity to send: zero if no command is current."""
+        lin, ang, stamp = self._cmd
+        if stamp is None:
+            return 0.0, 0.0
+        if self.cmd_vel_timeout > 0 and time.monotonic() - stamp > self.cmd_vel_timeout:
+            if (lin != 0.0 or ang != 0.0) and self._timeout_logged_stamp != stamp:
+                self._timeout_logged_stamp = stamp
+                rospy.logwarn("[MCU Comms] No /cmd_vel for %.2f s while moving; sending zero velocity",
+                              self.cmd_vel_timeout)
+            return 0.0, 0.0
+        return lin, ang
+
+    @staticmethod
+    def _velocity_message(lin_cmd, ang_cmd):
+        """Velocity message: [45, linear (big-endian float), angular (big-endian float)]."""
+        lin_vel_bytes = float_to_bytes(lin_cmd)
+        ang_vel_bytes = float_to_bytes(ang_cmd)
+        return [45,  # Indicates velocity message
+                lin_vel_bytes[3],lin_vel_bytes[2],lin_vel_bytes[1],lin_vel_bytes[0],  # Linear velocity
+                ang_vel_bytes[3],ang_vel_bytes[2],ang_vel_bytes[1],ang_vel_bytes[0]]  # Angular velocity
 
     def run(self):
         """
         This is the main loop for the MCU communication node
         """
-        self.mcu_startup()
+        if not self.mcu_startup():
+            return
         
-        # Execute loop at 100 Hz: every topic published at 100/6=16.67 Hz
+        # Execute loop at 100 Hz. The MCU sends one message type per frame from a fixed schedule
+        # (TxSchedule in JetsonSM.c), so each topic's rate is 100 Hz times its share of that schedule.
         rate = rospy.Rate(100)
 
         # Variables to save throughout the loop
@@ -195,26 +319,27 @@ class MCU_Comms:
         pos_theta = 0
 
         air_quality_msg = AirQuality()
-        aqi_publish_count = 0
+        have_temp_humidity = False
+        last_air_quality_pub = 0.0
 
-        num_unknown = 0
+        num_bad = 0  # Consecutive frames that were corrupted, stale, or of no known type
 
         sensor_sequence = 0  # Sequence number for sensor messages
         while not rospy.is_shutdown():
             # Send velocity command to MCU
-            lin_vel_bytes = float_to_bytes(self.lin_cmd)
-            ang_vel_bytes = float_to_bytes(self.ang_cmd)
-            vel_msg = [45,  # Indicates velocity message
-                       lin_vel_bytes[3],lin_vel_bytes[2],lin_vel_bytes[1],lin_vel_bytes[0],  # Linear velocity
-                       ang_vel_bytes[3],ang_vel_bytes[2],ang_vel_bytes[1],ang_vel_bytes[0],  # Angular velocity
-                       0,0,0,0,0,0,0]  # Padding
-            rcvd = self._spi_exchange(vel_msg)
+            rcvd = self._spi_exchange(self._velocity_message(*self._current_cmd()))
             msg = self._mcu_msg(rcvd)
             # print(msg)
 
+            msg_type = msg[0] if self._check_mcu_msg(msg) else None
+            if msg_type in KNOWN_MSG_TYPES:
+                num_bad = 0
+                if not self.link_up:
+                    self._set_mcu_connected(True)
+                    rospy.loginfo("[MCU Comms] MCU link up")
+
             # Now do something with the received data
-            if msg[0] == 7: # Received dead reckoning data
-                num_unknown = 0  # Reset unknown message count
+            if msg_type == 7: # Received dead reckoning data
 
                 # Extract the dead reckoning data (converts from bytes to float)
                 V_dr = bytes_to_float(list(reversed(msg[1:5])))
@@ -251,8 +376,7 @@ class MCU_Comms:
 
                 sensor_sequence = sensor_sequence + 1
 
-            elif msg[0] == 8:  # Recieved position data
-                num_unknown = 0  # Reset unknown message count
+            elif msg_type == 8:  # Recieved position data
 
                 # Extract the position data (converts from bytes to float)
                 pos_x = bytes_to_float(list(reversed(msg[1:5])))
@@ -283,8 +407,7 @@ class MCU_Comms:
 
                 self.tf_pub.publish(tf_msg)  # actually publish the data
 
-            elif msg[0] == 9: # Received IMU data
-                num_unknown = 0  # Reset unknown message count
+            elif msg_type == 9: # Received IMU data
 
                 # Get roll/pitch in degrees
                 roll = bytes_to_float(list(reversed(msg[1:5])))
@@ -318,14 +441,12 @@ class MCU_Comms:
                 
                 # self.imu_pub.publish(imu)  # actually publish the data                
 
-            elif msg[0] == 15:  # Received IMU Orientation XY data
-                num_unknown = 0  # Reset unknown message count
+            elif msg_type == 15:  # Received IMU Orientation XY data
 
                 qx = bytes_to_float(list(reversed(msg[1:5])))
                 qy = bytes_to_float(list(reversed(msg[5:9])))
 
-            elif msg[0] == 16:  # Received IMU Orientation ZW data
-                num_unknown = 0  # Reset unknown message count
+            elif msg_type == 16:  # Received IMU Orientation ZW data
 
                 qz = bytes_to_float(list(reversed(msg[1:5])))
                 qw = bytes_to_float(list(reversed(msg[5:9])))
@@ -358,8 +479,7 @@ class MCU_Comms:
                 
                 # self.imu_pub.publish(imu)  # actually publish the data
                 
-            elif msg[0] == 10: # Received reflective sensor data
-                num_unknown = 0  # Reset unknown message count
+            elif msg_type == 10: # Received reflective sensor data
 
                 right_sensor = bytes_to_unsigned_int(msg[1], msg[2])
                 front_sensor = bytes_to_unsigned_int(msg[3], msg[4])
@@ -396,50 +516,80 @@ class MCU_Comms:
                         rospy.loginfo("[MCU Comms] Button 3 pressed")
                     else:
                         rospy.loginfo("[MCU Comms] Button 3 released")
-            elif msg[0] == 6: # Received temperature/humidity data
-                num_unknown = 0  # Reset unknown message count
+            elif msg_type == 6: # Received temperature/humidity data
+                # Keep the latest values; they go out with the next air quality publish
+                air_quality_msg.temperature = bytes_to_float(list(reversed(msg[1:5])))
+                air_quality_msg.relative_humidity = bytes_to_float(list(reversed(msg[5:9])))
+                have_temp_humidity = True
 
-                # Only publish approximately once a second
-                aqi_publish_count += 1
-                if aqi_publish_count >= 33:
-                    temp = bytes_to_float(list(reversed(msg[1:5])))
-                    humidity = bytes_to_float(list(reversed(msg[5:9])))
-
-                    air_quality_msg.header.stamp = rospy.Time.now()
-                    air_quality_msg.temperature = temp
-                    air_quality_msg.relative_humidity = humidity
-            elif msg[0] == 5: # Received air quality data
-                num_unknown = 0  # Reset unknown message count
-
-                if aqi_publish_count >= 33:
-                    aqi_publish_count = 0
+            elif msg_type == 5: # Received air quality data
+                # Throttle by time, not message count, so the rate doesn't depend on the MCU schedule
+                now = time.monotonic()
+                if have_temp_humidity and now - last_air_quality_pub >= AIR_QUALITY_PERIOD:
+                    last_air_quality_pub = now
 
                     voc = struct.unpack('i', bytes(list(reversed(msg[1:5]))))[0]
                     nox = struct.unpack('i', bytes(list(reversed(msg[5:9]))))[0]
 
+                    air_quality_msg.header.stamp = rospy.Time.now()
                     air_quality_msg.voc_index = float(voc)
                     air_quality_msg.nox_index = float(nox)
                     self.air_quality_pub.publish(air_quality_msg)
             else:
-                num_unknown += 1
+                if msg_type is not None:
+                    self.unknown_frames += 1
+                num_bad += 1
                 # print(rcvd)
 
-                if num_unknown >= 20:
-                    rospy.loginfo("[MCU Comms] Resetting")
-                    self._recover_mcu(pos_x=pos_x, pos_y=pos_y, pos_theta=pos_theta)
-                    num_unknown = 0                
+                if num_bad >= MAX_BAD_FRAMES:
+                    rospy.logwarn("[MCU Comms] %d unusable MCU frames in a row (totals since handshake: "
+                                  "%d CRC errors, %d repeated, %d unexpected type); re-handshaking",
+                                  num_bad, self.crc_errors, self.repeated_frames, self.unknown_frames)
+                    if not self._recover_mcu(pos_x=pos_x, pos_y=pos_y, pos_theta=pos_theta):
+                        return
+                    num_bad = 0
             rate.sleep()
 
     def shutdown(self):
         """
-        This function is called when the node is shutdown
-        """
-        self._set_mcu_connected(False)
-        # Send shutdown message to MCU
-        shutdown_message = [90, 0b11110000,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        self._spi_exchange(shutdown_message)
+        Stop the robot and release the MCU. Called from the main thread after run() returns, so
+        it never races the loop for the SPI device.
 
-        self.spi.close()
+        Zero-velocity frames go first so the wheels stop even if every shutdown frame is lost
+        (otherwise the MCU keeps the last speed until its 1 s JETSON_TIMEOUT). Each message is
+        sent several times because a single frame can be rejected.
+        """
+        try:
+            for message in [self._velocity_message(0.0, 0.0)] * 3 + [[90, 0b11110000]] * 3:
+                self._spi_exchange(message)
+                time.sleep(0.01)
+        finally:
+            self.spi.close()
+        try:
+            self._set_mcu_connected(False)
+        except rospy.ROSException:
+            pass  # Publishers may already be closed during ROS shutdown
+
+def _make_crc8_table(poly=0x31):
+    table = []
+    for byte in range(256):
+        crc = byte
+        for _ in range(8):
+            crc = ((crc << 1) ^ poly) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
+        table.append(crc)
+    return table
+
+_CRC8_TABLE = _make_crc8_table()
+
+def crc8(data):
+    """
+    CRC-8, poly 0x31, init 0xFF, no reflection or final XOR. Matches SpiCrc8 in JetsonSM.c
+    (the same CRC the MCU uses for its Sensirion sensors).
+    """
+    crc = 0xFF
+    for b in data:
+        crc = _CRC8_TABLE[crc ^ b]
+    return crc
 
 def float_to_bytes(float_number):
     """
@@ -463,11 +613,12 @@ def bytes_to_unsigned_int(high_byte, low_byte):
     # Pack the bytes into a 16 bit unsigned int
     return (high_byte << 8) | low_byte
 
-def mcu_shutdown():
-    rospy.loginfo("[MCU Comms] Shutting down MCU communication")
-    comms.shutdown()
-
 if __name__ == "__main__":
     comms = MCU_Comms()
-    rospy.on_shutdown(mcu_shutdown)
-    comms.run()
+    try:
+        comms.run()
+    except rospy.ROSInterruptException:
+        pass  # rate.sleep() raises this on shutdown
+    finally:
+        rospy.loginfo("[MCU Comms] Shutting down MCU communication")
+        comms.shutdown()
