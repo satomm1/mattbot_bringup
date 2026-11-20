@@ -11,6 +11,9 @@
 <arg name="laser_z_hit" default="0.95"/>
 <arg name="laser_z_rand" default="0.05"/>
 <arg name="laser_sigma_hit" default="0.15"/>
+<!-- Resample only when the effective particle count falls below half the particles. resample_interval=1 otherwise
+     resamples on every filter update (every scan during spins), which depletes particle diversity. -->
+<arg name="selective_resampling" default="true"/>
 
 <node pkg="amcl" type="amcl" name="amcl" output="screen">
   <!-- Publish scans from best pose at a max of 10 Hz -->
@@ -40,6 +43,7 @@
   <param name="update_min_a" value="0.075"/>
   <param name="odom_frame_id" value="odom"/>
   <param name="resample_interval" value="1"/>
+  <param name="selective_resampling" value="$(arg selective_resampling)"/>
   <param name="transform_tolerance" value="0.1"/>
   <!-- Random-particle recovery off: it teleported the pose on the first fast ALIGN turn after the filter reset.
        Lost-localization recovery is handled by mattbot_mcl/localization_quality. -->
